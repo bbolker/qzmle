@@ -1,7 +1,5 @@
 ## MAKE THIS REQUIRE PACKAGE
-usethis::use_package("Deriv")
-
-
+## usethis::use_package("Deriv")
 
 # List of log-lik function for different ditributions
 loglik_list <- list(
@@ -67,7 +65,7 @@ mkfun <- function(formula, data) {
     else{
       ##having more than one parameters
       for (m in mnames){
-        mlist[[m]] <- grepl(...)
+          ## mlist[[m]] <- grepl(...)
       }
 
     }

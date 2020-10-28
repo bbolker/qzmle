@@ -1,7 +1,7 @@
-library(devtools)
-use_r("tmb")
-load_all()
-check()
+## library(devtools)
+## use_r("tmb")
+## load_all()
+## check()
 
 
 ## form -> objective function (i.e. a function that computes -sum(dpois(y, lambda=b0*latitude^2))
