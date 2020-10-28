@@ -5,7 +5,10 @@
 loglik_list <- list(
   dpois = list(expr=expression(x * log(lambda) - lambda - lfactorial(x)),
                params=c("lambda")),
-  dnorm = list(expr=expression(-log(2*4*(4*atan(1/5)-atan(1/239)))/2-log(sd) - (x-mean)^2/(2*sd^2)),
+  dnorm = list(expr=expression(## -log(2*4*(4*atan(1/5)-atan(1/239)))/2 -
+                   - log(2*pi)
+                   - log(sd)
+                   - (x-mean)^2/(2*sd^2)),
                params=c("mean","sd"))
 )
 
@@ -18,9 +21,11 @@ y ~ dpois(exp(log_lambda), ...,
 
 #' @export
 mkfun <- function(formula, data) {
+    ## explicit error message: otherwise won't get caught until
+    ## much later
   if(missing(data)) {
-    stop(paste("missing data...")) # if no data
-    }
+    stop("missing data...") # if no data
+  }
   RHS <- formula[[3]] # dnorm(mean = b0 + b1 * latitude^2, sd = 1)
   response <- formula[[2]] # always y
   ddistn <- as.character(RHS[[1]]) ## dnorm /// get the name of distribution variable
