@@ -23,6 +23,10 @@ y ~ dpois(exp(log_lambda), ...,
 #' Deriving the log-lik and gradients
 #' @param formula A formula in expression form of "y ~ model"
 #' @param data A list of parameter in the formula with values in vectors
+#' @examples
+#' set.seed(101)
+#' dd <- data.frame(y=rpois(100,lambda=1))
+#' fun1 <- mkfun(y~dpois(exp(log_mu)), data=dd)
 #' @export
 mkfun <- function(formula, data) {
     ## explicit error message: otherwise won't get caught until

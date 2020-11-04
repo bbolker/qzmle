@@ -18,6 +18,8 @@ test_that("Poisson dist. with single parameter lambda works", {
 
   b0=3
   lambda = b0*dd$latitude^2
-  expect_equal(ff$gr(c(b0=3))[['b0']],-sum(numDeriv::grad(pois,lambda)*dd$latitude^2))
+  if (requireNamespace("numDeriv")) {
+      expect_equal(ff$gr(c(b0=3))[['b0']],-sum(numDeriv::grad(pois,lambda)*dd$latitude^2))
+  }
 })
 

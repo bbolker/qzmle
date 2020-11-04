@@ -14,3 +14,8 @@ mkfun(formula, data)
 \description{
 Deriving the log-lik and gradients
 }
+\examples{
+set.seed(101)
+dd <- data.frame(y=rpois(100,lambda=1))
+fun1 <- mkfun(y~dpois(exp(log_mu)), data=dd)
+}
