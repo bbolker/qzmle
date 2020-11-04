@@ -1,5 +1,6 @@
 ## MAKE THIS REQUIRE PACKAGE
-## usethis::use_package("Deriv")
+#'@importFrom Deriv Deriv
+
 
 # List of log-lik function for different ditributions
 loglik_list <- list(
@@ -19,6 +20,9 @@ y ~ dpois(exp(log_lambda), ...,
           parameters = list(log_lambda = ~ poly(lat, long, 2))
 )
 
+#' Deriving the log-lik and gradients
+#' @param formula A formula in expression form of "y ~ model"
+#' @param data A list of parameter in the formula with values in vectors
 #' @export
 mkfun <- function(formula, data) {
     ## explicit error message: otherwise won't get caught until
@@ -31,12 +35,12 @@ mkfun <- function(formula, data) {
   ddistn <- as.character(RHS[[1]]) ## dnorm /// get the name of distribution variable
   arglist <- as.list(RHS[-1]) ## $lambda = (b0 * latitude^2), sd///delete function name
   arglist1 <- c(
-    list(x = response), ##assign x to y
+    list(x = response), ##assign x to y)
     arglist,
     list(log = TRUE)
   )
   fn <- function(pars) { ## parameter
-    pars_and_data <- c(as.list(pars), data)
+    pars_and_data <- c(as.list(pars), data) ## list of b0,b1,y,lattitude
     r <- with(
       pars_and_data,
       -sum(do.call(ddistn, arglist1))
@@ -58,21 +62,31 @@ mkfun <- function(formula, data) {
     arglist_eval$x <- eval(response, pars_and_data) ##evaluate response variable and assign its value to 'x'
     d1 <- eval(d0, arglist_eval) ## sub d0 - compute the deriv of log_lik wrt to its parameters
 
-    if (length(setdiff(names(arglist_eval), "x")) < 2) { ##one parameter distribution
     parnames <- setdiff(all.vars(RHS), names(data))
+    if (length(setdiff(names(arglist_eval), "x")) < 2) { ##one parameter distribution
     dlist <- list()
     glist <- list()
     for (p in parnames) {
-      dlist[[p]] <- eval(Deriv::Deriv(arglist$lambda, p), pars_and_data)
-      glist[[p]] <- -sum(d1 * dlist[[p]])
-    }
+        dlist[[p]] <- eval(Deriv::Deriv(arglist$lambda, p), pars_and_data) ##lambda here is hardcoded
+        glist[[p]] <- -sum(d1 * dlist[[p]])
+        }
     }
     else{
       ##having more than one parameters
+      glist <- list()
       for (m in mnames){
-          ## mlist[[m]] <- grepl(...)
+        d2 <- d1[grep(m, names(d1))] #log-lik wrt to parameters
+        if (is.numeric(arglist[[m]])){
+          glist[[m]] <- 0
+        }
+        else{
+          for (p in parnames){
+            dlist <- list()
+            dlist[[m]][[p]] <- eval(Deriv::Deriv(arglist[[m]],p), pars_and_data)
+            glist[[m]][[p]] <- -sum(d2*dlist[[m]][[p]])
+          }
+        }
       }
-
     }
     return(unlist(glist))
 

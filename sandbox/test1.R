@@ -1,5 +1,4 @@
 ## library(devtools)
-## use_r("tmb")
 ## load_all()
 ## check()
 
@@ -17,6 +16,14 @@ dd <- data.frame(
   y = rpois(100, lambda = 2),
   latitude = rnorm(100)
 )
+
+set.seed(101)
+dd2 <- data.frame(
+  y = rpois(100, lambda = 2),
+  latitude = rnorm(100),
+  sd=1
+)
+
 
 ## debug(mkfun)
 ff <- mkfun(form, data=dd)
@@ -70,7 +77,7 @@ ff2$gr(c(b0=1,b1=2))[['b1']] #43.85188
 
 
 ### Test 3 --------------
-form4 <- y ~ dnorm(mean = b0 + b1 * latitude^2, sd = sd)
+form4 <- y ~ dnorm(mean = b0 + b1 * latitude^2, sd = 1)
 ff4 <- mkfun(form4, data=dd)
 ff4$fn(c(b0=1, b1=2)) == -sum(dnorm(dd$y, mean=1 + 2*dd$latitude^2, sd=1, log=TRUE))
 ## TRUE
