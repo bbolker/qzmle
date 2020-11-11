@@ -1,8 +1,7 @@
-## MAKE THIS REQUIRE PACKAGE
-#'@importFrom Deriv Deriv
+#' @importFrom Deriv Deriv
 
+## List of log-lik function for different distributions
 
-# List of log-lik function for different ditributions
 loglik_list <- list(
   dpois = list(expr=expression(x * log(lambda) - lambda - lfactorial(x)),
                params=c("lambda")),
@@ -10,10 +9,9 @@ loglik_list <- list(
                    - log(2*pi)
                    - log(sd)
                    - (x-mean)^2/(2*sd^2)),
+               ## this is another
                params=c("mean","sd"))
 )
-
-
 
 ## data frame lat, long
 y ~ dpois(exp(log_lambda), ...,
@@ -67,31 +65,27 @@ mkfun <- function(formula, data) {
     d1 <- eval(d0, arglist_eval) ## sub d0 - compute the deriv of log_lik wrt to its parameters
 
     parnames <- setdiff(all.vars(RHS), names(data))
-    if (length(setdiff(names(arglist_eval), "x")) < 2) { ##one parameter distribution
-    dlist <- list()
     glist <- list()
-    for (p in parnames) {
-        dlist[[p]] <- eval(Deriv::Deriv(arglist[[mnames]], p), pars_and_data) ##lambda here is hardcoded
-        glist[[p]] <- -sum(d1 * dlist[[p]])
-        }
-    }
-    else{
-    #having more than one parameters
-      glist <- list()
-      for (m in mnames){
-        d2 <- d1[grep(m, names(d1))] #log-lik wrt to parameters
-       if (is.numeric(arglist[[m]])){
-        glist[[m]] <- 0
-       }
-       else{
-          for (p in parnames){
-            dlist <- list()
-            dlist[[m]][[p]] <- eval(Deriv::Deriv(arglist[[m]],p), pars_and_data)
-            glist[[m]][[p]] <- -sum(d2*dlist[[m]][[p]])
-          }
-        }
-       }
-    }
+    ## a matrix with appropriately named columns corresponding to parameters
+    ## we  know what the structure of the returned gradient vector (which
+    ## constitutes the gradients for all observations squashed together,
+    ## i.e.  g_11, g_12,... g_21,g_22,... g_ij
+    ##  where i indicates the parameter and j indicates the observation
+    ## uses the fact that R stores matrix in column-major order
+    d1_mat <- matrix(d1, ncol=length(mnames), dimnames=list(NULL, mnames))
+    for (m in mnames){
+        d2 <- d1_mat[,m]
+        if (is.numeric(arglist[[m]])) {
+            ## constant!
+            glist[[m]] <- 0
+        } else {
+            for (p in parnames){
+                dlist <- list()
+                dlist[[m]][[p]] <- eval(Deriv::Deriv(arglist[[m]],p), pars_and_data)
+                glist[[m]][[p]] <- -sum(d2*dlist[[m]][[p]])
+            } ## p in parnames
+        } ## arg is not constant
+    } ## m in mnames
     return(unlist(glist))
 
     ##sd - d(loglik_norm)/d(sd)
