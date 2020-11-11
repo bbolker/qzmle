@@ -87,7 +87,9 @@ ff4$fn(c(b0=1, b1=2)) == -sum(dnorm(dd$y, mean=1 + 2*dd$latitude^2, sd=1, log=TR
 
 
 ### more implementations ---------------
-form3 <- y ~ dnorm(mean = b0 * latitude^2, sd = sd)
+form3 <- y ~ dnorm(mean = b0 * latitude^2, sd = 1)
+ff3 <- mkfun(form3, data=dd)
+ff3$fn(c(b0=1)) == -sum(dnorm(dd$y, mean=1*dd$latitude^2, sd=1, log=TRUE))
 
 form4 <- y ~ dnorm(mean = b0 + b1 * latitude^2, sd = sd)
 

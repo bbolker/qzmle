@@ -8,6 +8,7 @@ dd <- data.frame(y = rpois(100, lambda = 2),
 ## pois needs x in its environment
 x <- dd$y
 pois <- function(lambda){x*log(lambda)-lambda-lfactorial(x)}
+normal <- function(mean,sd){-log(2*pi)-log(sd)-(x-mean)^2/(2*sd^2)}
 ## MUST use this (rather than dpois) for now:
 ## FIXME: can we get numDeriv() to work with a multi-parameter model?
 
@@ -17,7 +18,7 @@ test_that("Poisson dist. with single parameter lambda works", {
 
   # my function
   ff <- mkfun(form, data=dd)
-  expect_equal(names(ff), c("fn","gr"))  
+  expect_equal(names(ff), c("fn","gr"))
 
   ## manually setting parameters
   x <- dd$y  ## pois looks for x in its environment
@@ -46,7 +47,7 @@ test_that("Poisson with two parameters", {
   L <- lambda2(b0=3,b1=2)
   expect_equal(-sum(pois(L)),
                -sum(dpois(dd$y,L,log=TRUE)))
-                    
+
   expect_equal(ff2$fn(c(b0=3,b1=2)),
                -sum(pois(L)))
 
@@ -58,7 +59,7 @@ test_that("Poisson with two parameters", {
           assign("x",dd$y[i], environment(pois))
           fullgrad[i] <- numDeriv::grad(pois,L[i])
       }
-      assign("x",dd$y, environment(pois)) 
+      assign("x",dd$y, environment(pois))
 
       ## chain rule by hand: dL/db0=1, dL/db1=dd$latitude^2
       ## d(loglik)/db0 = d(loglik)/d(lambda)*d(lambda)/d(b0)
@@ -69,6 +70,15 @@ test_that("Poisson with two parameters", {
   }
 })
 
+test_that("normal with single parameter mean", {
+  #formula and data
+  form3 <- y ~ dnorm(mean = b0 * latitude^2, sd = 1)
+  ff3 <- mkfun(form3, data=dd)
+
+  m <- function(b0) { b0*dd$latitude^2 }
+  expect_equal(ff3$fn(c(b0=3)),
+               -sum(normal(m(b0=3), sd=1)))
+})
 
 
 
@@ -89,9 +99,9 @@ fr <- function(x) {   ## Rosenbrock Banana function
             200 *      (x2 - x1 * x1))
      }
 xx <-  optim(c(-1.2,1), fr)
-## dput(xx)
-ref_val <- list(par = c(1.00026013872567, 1.00050599930377), value = 8.82524109672275e-08, 
-    counts = c(`function` = 195L, gradient = NA), convergence = 0L, 
+##dput(xx)
+ref_val <- list(par = c(1.00026013872567, 1.00050599930377), value = 8.82524109672275e-08,
+    counts = c(`function` = 195L, gradient = NA), convergence = 0L,
     message = NULL)
 expect_equal(xx,ref_val)
 

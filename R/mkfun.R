@@ -71,26 +71,26 @@ mkfun <- function(formula, data) {
     dlist <- list()
     glist <- list()
     for (p in parnames) {
-        dlist[[p]] <- eval(Deriv::Deriv(arglist$lambda, p), pars_and_data) ##lambda here is hardcoded
+        dlist[[p]] <- eval(Deriv::Deriv(arglist[[mnames]], p), pars_and_data) ##lambda here is hardcoded
         glist[[p]] <- -sum(d1 * dlist[[p]])
         }
     }
     else{
-      ##having more than one parameters
+    #having more than one parameters
       glist <- list()
       for (m in mnames){
         d2 <- d1[grep(m, names(d1))] #log-lik wrt to parameters
-        if (is.numeric(arglist[[m]])){
-          glist[[m]] <- 0
-        }
-        else{
+       if (is.numeric(arglist[[m]])){
+        glist[[m]] <- 0
+       }
+       else{
           for (p in parnames){
             dlist <- list()
             dlist[[m]][[p]] <- eval(Deriv::Deriv(arglist[[m]],p), pars_and_data)
             glist[[m]][[p]] <- -sum(d2*dlist[[m]][[p]])
           }
         }
-      }
+       }
     }
     return(unlist(glist))
 
