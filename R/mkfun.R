@@ -6,7 +6,7 @@ loglik_list <- list(
   dpois = list(expr=expression(x * log(lambda) - lambda - lfactorial(x)),
                params=c("lambda")),
   dnorm = list(expr=expression(## -log(2*4*(4*atan(1/5)-atan(1/239)))/2 -
-                   - log(2*pi)
+                   - log((2*pi)^0.5)
                    - log(sd)
                    - (x-mean)^2/(2*sd^2)),
                ## this is another

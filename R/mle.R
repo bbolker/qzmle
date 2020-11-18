@@ -4,10 +4,18 @@
 #' fit0 <- mle(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
 #' ## compare with bbmle
 #' fit1 <- bbmle::mle2(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
-#' 
+#'
+#'fit3 <- mle(y~dnorm(mean=ymean, sd=2),start=list(ymean=mean(d$y), ysd=2),data=d)
+#'fit4 <- bbmle::mle2(y~dnorm(mean=ymean, sd=2),start=list(ymean=mean(d$y),ysd=2),data=d)
 mle <- function(form, start, data, optCtrl=list(method="BFGS")) {
     ff <- mkfun(form, data)
     argList<- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
     opt <- do.call(optim, c(argList,optCtrl))
-    return(opt)
+    ## trying to make it looks like bbmle output
+    opt$Call <- form ## need to fix to print out all input arg
+    opt$Coefficients <- opt$par
+    opt$`Log-likelihood` <- opt$value
+    output <- tail(opt, 3)
+    return(output)
 }
+

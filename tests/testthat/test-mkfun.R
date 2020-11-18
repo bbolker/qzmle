@@ -8,15 +8,15 @@ dd <- data.frame(y = rpois(100, lambda = 2),
 ## pois needs x in its environment
 x <- dd$y
 pois <- function(lambda){x*log(lambda)-lambda-lfactorial(x)}
-normal <- function(mean,sd){-log(2*pi)-log(sd)-(x-mean)^2/(2*sd^2)}
+normal <- function(mean,sd){-log((2*pi)^0.5)-log(sd)-(x-mean)^2/(2*sd^2)}
 ## MUST use this (rather than dpois) for now:
 ## FIXME: can we get numDeriv() to work with a multi-parameter model?
 
 test_that("Poisson dist. with single parameter lambda works", {
-  #formula and data
-    form <- y ~ dpois(lambda = b0 * latitude^2)
+  ##formula and data
+  form <- y ~ dpois(lambda = b0 * latitude^2)
 
-  # my function
+  ## my function
   ff <- mkfun(form, data=dd)
   expect_equal(names(ff), c("fn","gr"))
 
@@ -30,13 +30,13 @@ test_that("Poisson dist. with single parameter lambda works", {
   b0 <- 3
   lambda <- b0*dd$latitude^2
   if (requireNamespace("numDeriv")) {
-      expect_equal(ff$gr(c(b0=3))[['b0']],
+      expect_equal(ff$gr(c(b0=3))[['lambda.b0']],
                    -sum(numDeriv::grad(pois,lambda)*dd$latitude^2))
   }
 })
 
 test_that("Poisson with two parameters", {
-  #formula and data
+  ## formula and data
   form2 <- y ~ dpois(lambda = b0 + b1* latitude^2)
 
   ## my function
@@ -71,7 +71,7 @@ test_that("Poisson with two parameters", {
 })
 
 test_that("normal with single parameter mean", {
-  #formula and data
+  ##formula and data
   form3 <- y ~ dnorm(mean = b0 * latitude^2, sd = 1)
   ff3 <- mkfun(form3, data=dd)
 
@@ -80,6 +80,20 @@ test_that("normal with single parameter mean", {
                -sum(normal(m(b0=3), sd=1)))
 })
 
+test_that("normal with two parameter mean", {
+  ##formula and data
+  form4 <- y ~ dnorm(mean = b0 + b1 * latitude^2, sd = 1)
+  ff4 <- mkfun(form4, data=dd)
+  ff4$fn(c(b0=1, b1=2))
+
+  m <- function(b0, b1) {b0 + b1*dd$latitude^2}
+  M <- m(b0=1, b1=2)
+  expect_equal(ff4$fn(c(b0=1, b1=2)),
+               -sum(normal(m(b0=1, b1=2), sd=1)))
+
+### need to test for gradient - numDeriv doesnt test multiple params
+
+})
 
 
 ## optim(par=<starting parameters>, fn= ...$fn, gr = ... $gr, method="BFGS")
