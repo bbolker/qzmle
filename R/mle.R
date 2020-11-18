@@ -19,3 +19,15 @@ mle <- function(form, start, data, optCtrl=list(method="BFGS")) {
     return(output)
 }
 
+## S3 methods for `print`, `coef`, `vcov`
+
+## S3 methods in bbmle
+## m <- new("mle2", call=call, call.orig=call.orig, coef=coef,
+## fullcoef=unlist(fullcoef), vcov=tvcov,
+## min=min, details=oout, minuslogl=minuslogl, method=method,
+## optimizer=optimizer,data=as.list(data),formula=formula)
+## attr(m,"df") = length(m@coef)
+
+
+
+
