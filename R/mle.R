@@ -33,6 +33,7 @@ mle <- function(form, start, data, optCtrl=list(method="BFGS")) {
     return(result)
 }
 
+
 #' @export
 print.qzmle <- function (x, ...) {
     check_dots(...)
@@ -44,27 +45,16 @@ print.qzmle <- function (x, ...) {
     cat(-1*round(x$minuslogl, 2), "\n")
 }
 
-#'@export
-logLik.qzmle <- function(x, ...) {
-  cat("'log Lik.'", -1*round(x$minuslogl, 2))
-  cat(" (df=")
-  cat(length(x$coefficients))
-  cat(")")
-}
-
-#'@export
-vcov.qzmle <- function(x, ...) {
-  print(x$tvcov)
-}
 
 #' @export
 #' @importFrom stats pnorm printCoefmat
-summary.qzmle <- function(x, ...) {
+summary.qzmle <- function(object, ...) {
+  check_dots(...)
   cat("Maximum likelihood estimation\n\nCall:\n")
-  print(x$call)
+  print(object$call)
   cat("\nCoefficients:\n")
-  cmat <- cbind(Estimate=x$coefficients,
-                 `Std. Error`=sqrt(diag(x$tvcov)))
+  cmat <- cbind(Estimate=object$coefficients,
+                 `Std. Error`=sqrt(diag(object$tvcov)))
   zval <- cmat[, "Estimate"]/cmat[, "Std. Error"]
   pval <- 2*stats::pnorm(-abs(zval))
   coefmat <- cbind(cmat,"z value"=zval,"Pr(z)"=pval)
@@ -72,6 +62,21 @@ summary.qzmle <- function(x, ...) {
 }
 
 
+#' @export
+logLik.qzmle <- function(object, ...) {
+  check_dots(...)
+  cat("'log Lik.'", -1*round(object$minuslogl, 2))
+  cat(" (df=")
+  cat(length(object$coefficients))
+  cat(")")
+}
+
+
+#' @export
+vcov.qzmle <- function(object, ...) {
+  check_dots(...)
+  print(object$tvcov)
+}
 
 
 ## not working
