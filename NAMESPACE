@@ -2,7 +2,13 @@
 
 S3method(print,qzmle)
 S3method(summary,qzmle)
+export(logLik.qzmle)
 export(mkfun)
 export(mle)
+export(vcov.qzmle)
 importFrom(Deriv,Deriv)
+importFrom(MASS,ginv)
+importFrom(numDeriv,jacobian)
 importFrom(stats,optim)
+importFrom(stats,pnorm)
+importFrom(stats,printCoefmat)

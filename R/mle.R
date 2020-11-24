@@ -12,14 +12,23 @@
 #' @export
 
 #' @importFrom stats optim
+#' @importFrom numDeriv jacobian
+#' @importFrom MASS ginv
 mle <- function(form, start, data, optCtrl=list(method="BFGS")) {
     ff <- mkfun(form, data)
     argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
     opt <- do.call(stats::optim, c(argList,optCtrl))
+    ## vcov is the inverse of hessian (jacobian of gradient)
+    hess <- numDeriv::jacobian(ff$gr, opt$par)
+    tvcov <- MASS::ginv(hess) ## solve() gives error for non-invertible matrix
+    colnames(tvcov) <- names(opt$par)
+    rownames(tvcov) <- names(opt$par)
+
     result <- list()
-    result$call <- form ## need to fix to print out all input arg
+    result$call <- match.call()
     result$coefficients <- opt$par
     result$minuslogl <- opt$value
+    result$tvcov <- tvcov
     class(result) <- "qzmle"
     return(result)
 }
@@ -35,10 +44,39 @@ print.qzmle <- function (x, ...) {
     cat(-1*round(x$minuslogl, 2), "\n")
 }
 
-#' @export
-summary.qzmle <- function(object) {
-    cat("hello\n")
+#'@export
+logLik.qzmle <- function(x, ...) {
+  cat("'log Lik.'", -1*round(x$minuslogl, 2))
+  cat(" (df=")
+  cat(length(x$coefficients))
+  cat(")")
 }
+
+#'@export
+vcov.qzmle <- function(x, ...) {
+  print(x$tvcov)
+}
+
+#' @export
+#' @importFrom stats pnorm printCoefmat
+summary.qzmle <- function(x, ...) {
+  cat("Maximum likelihood estimation\n\nCall:\n")
+  print(x$call)
+  cat("\nCoefficients:\n")
+  cmat <- cbind(Estimate=x$coefficients,
+                 `Std. Error`=sqrt(diag(x$tvcov)))
+  zval <- cmat[, "Estimate"]/cmat[, "Std. Error"]
+  pval <- 2*stats::pnorm(-abs(zval))
+  coefmat <- cbind(cmat,"z value"=zval,"Pr(z)"=pval)
+  stats::printCoefmat(coefmat)
+}
+
+
+
+
+## not working
+## fit4 <- mle(y~dnorm(mean=ymean, sd=ysd),start=list(ymean=mean(d$y), ysd=sd(d$y)),data=d)
+
 
 ## compare with bbmle
 ##fit1 <- bbmle::mle2(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
@@ -50,13 +88,6 @@ summary.qzmle <- function(object) {
 
 ## `coef`, `vcov` are simpler
 ## (you don't really need to define the coef() method
-
-## S3 methods in bbmle
-## m <- new("mle2", call=call, call.orig=call.orig, coef=coef,
-## fullcoef=unlist(fullcoef), vcov=tvcov,
-## min=min, details=oout, minuslogl=minuslogl, method=method,
-## optimizer=optimizer,data=as.list(data),formula=formula)
-## attr(m,"df") = length(m@coef)
 
 
 ## twoWords, two.words, two_words, twowords, TwoWords

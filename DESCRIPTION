@@ -14,6 +14,6 @@ LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.1
 Imports: 
-	Deriv, stats
+	Deriv, stats, numDeriv, MASS 
 Suggests: 
-    testthat, numDeriv
+    testthat
