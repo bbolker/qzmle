@@ -14,25 +14,44 @@
 #' @importFrom stats optim
 #' @importFrom numDeriv jacobian
 #' @importFrom MASS ginv
-mle <- function(form, start, data, optCtrl=list(method="BFGS")) {
+mle <- function(form, start, data, control=mle_control()) {
     ff <- mkfun(form, data)
     argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
-    opt <- do.call(stats::optim, c(argList,optCtrl))
-    ## vcov is the inverse of hessian (jacobian of gradient)
-    hess <- numDeriv::jacobian(ff$gr, opt$par)
-    tvcov <- MASS::ginv(hess) ## solve() gives error for non-invertible matrix
-    colnames(tvcov) <- names(opt$par)
-    rownames(tvcov) <- names(opt$par)
+    ## FIXME: make sure hessian=FALSE (we will want to compute our own hessian)
+    opt <- do.call(stats::optim, c(argList,control$optControl))
+    hess_ok <- FALSE
+    repeat {
+        ## vcov is the inverse of hessian (jacobian of gradient)
+        ## FIXME: do something sensible if control$hessian_method=="none"
+        hess <- numDeriv::jacobian(ff$gr, opt$par, method=control$hessian_method)
+        ## FIXME: 
+        ##  if we don't have gradient, we'll need to use stats::optimHess() (if hessian_method=="simple")
+        ##    *or* numDeriv::hessian() instead (if hessian_method=="Richardson")
+        ##  
+        tvcov <- MASS::ginv(hess) ## solve() gives error for non-invertible matrix
+        ##  if the Hessian is bad AND method=="simple"
+        ##    change method to "Richardson"
+        ##    else break
+        break
+    }
+    dimnames(tvcov) <- list(opt$par, opt$par)
 
-    result <- list()
-    result$call <- match.call()
-    result$coefficients <- opt$par
-    result$minuslogl <- opt$value
-    result$tvcov <- tvcov
+    result <- list(
+        call = match.call(),
+        coefficients = opt$par,
+        minuslogl = opt$value,
+        tvcov = tvcov
+    )
     class(result) <- "qzmle"
     return(result)
 }
 
+#' return default values and/or user-set values for details of fitting
+mle_control <- function(optControl=list(method="BFGS"),
+                        hessian_method=c("simple","Richardson","none")) {
+    hessian_method <- match.args(hessian_method)
+    lme4:::namedlist(optControl, hessian_method)
+}
 
 #' @export
 print.qzmle <- function (x, ...) {
