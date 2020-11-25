@@ -59,8 +59,8 @@ summary.qzmle <- function(object, ...) {
   pval <- 2*stats::pnorm(-abs(zval))
   coefmat <- cbind(cmat,"z value"=zval,"Pr(z)"=pval)
   stats::printCoefmat(coefmat)
-}
-
+  cat("\n-2 log L:", 2*object$minuslogl)
+} ## maybe break it down to print.summary.qzmle?
 
 #' @export
 logLik.qzmle <- function(object, ...) {
@@ -78,22 +78,20 @@ vcov.qzmle <- function(object, ...) {
   print(object$tvcov)
 }
 
+#' @export
+stdEr.qzmle <- function(object, ...){
+  check_dots(...)
+  print(sqrt(diag(object$tvcov)))
+}
+
 
 ## not working
-## fit4 <- mle(y~dnorm(mean=ymean, sd=ysd),start=list(ymean=mean(d$y), ysd=sd(d$y)),data=d)
+## fit2 <- mle(y~dnorm(mean=ymean, sd=ysd),start=list(ymean=mean(d$y), ysd=sd(d$y)),data=d)
 
 
 ## compare with bbmle
-##fit1 <- bbmle::mle2(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
-##fit4 <- bbmle::mle2(y~dnorm(mean=ymean, sd=2),start=list(ymean=mean(d$y),ysd=2),data=d)
-
-## S3 methods for `print`
-## `summary`: check the summary method for bbmle
-## summary methods typically
-
-## `coef`, `vcov` are simpler
-## (you don't really need to define the coef() method
-
+# fit1 <- bbmle::mle2(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
+# fit4 <- bbmle::mle2(y~dnorm(mean=ymean, sd=2),start=list(ymean=mean(d$y),ysd=2),data=d)
 
 ## twoWords, two.words, two_words, twowords, TwoWords
 check_dots <- function(...) {
