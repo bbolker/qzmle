@@ -19,21 +19,22 @@ mle <- function(form, start, data, control=mle_control()) {
     argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
     ## FIXME: make sure hessian=FALSE (we will want to compute our own hessian)
     opt <- do.call(stats::optim, c(argList,control$optControl))
-    hess_ok <- FALSE
-    repeat {
-        ## vcov is the inverse of hessian (jacobian of gradient)
-        ## FIXME: do something sensible if control$hessian_method=="none"
-        hess <- numDeriv::jacobian(ff$gr, opt$par, method=control$hessian_method)
-        ## FIXME: 
-        ##  if we don't have gradient, we'll need to use stats::optimHess() (if hessian_method=="simple")
-        ##    *or* numDeriv::hessian() instead (if hessian_method=="Richardson")
-        ##  
-        tvcov <- MASS::ginv(hess) ## solve() gives error for non-invertible matrix
-        ##  if the Hessian is bad AND method=="simple"
-        ##    change method to "Richardson"
-        ##    else break
-        break
-    }
+    ## hess_ok <- FALSE
+
+    ## FIXME:
+    ##  if we don't have gradient, we'll need to use stats::optimHess() (if hessian_method=="simple")
+    ##    *or* numDeriv::hessian() instead (if hessian_method=="Richardson")
+    ##
+    # repeat {
+    #     ## vcov is the inverse of hessian (jacobian of gradient)
+    #     ## FIXME: do something sensible if control$hessian_method=="none"
+         hess <- numDeriv::jacobian(ff$gr, opt$par, method=control$hessian_method)
+         tvcov <- MASS::ginv(hess) ## solve() gives error for non-invertible matrix
+    #     ##  if the Hessian is bad AND method=="simple"
+    #     ##    change method to "Richardson"
+    #     ##    else break
+    #     break
+    # }
     dimnames(tvcov) <- list(opt$par, opt$par)
 
     result <- list(
@@ -46,11 +47,15 @@ mle <- function(form, start, data, control=mle_control()) {
     return(result)
 }
 
+## if nothing simple
+## if
+
 #' return default values and/or user-set values for details of fitting
 mle_control <- function(optControl=list(method="BFGS"),
-                        hessian_method=c("simple","Richardson","none")) {
-    hessian_method <- match.args(hessian_method)
-    lme4:::namedlist(optControl, hessian_method)
+                        hessian_method=c("simple", "Richardson","none")) {
+    hessian_method <- match.arg(hessian_method)
+    c(optControl, list(hessian_method=hessian_method))
+    ## lme4::namedList(optControl, hessian_method)
 }
 
 #' @export
