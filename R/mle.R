@@ -4,7 +4,7 @@
 #' @param form A formula in expression form of "y ~ model"
 #' @param start A list of initial values for p
 #' @param data A list of parameter in the formula with values in vectors
-#' @param optCtrl Optimization method to use
+#' @param control control arguments to pass to optimizer
 #' @examples
 #' d <- data.frame(x=0:10,y=c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
 #' fit0 <- mle(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
@@ -51,11 +51,13 @@ mle <- function(form, start, data, control=mle_control()) {
 ## if
 
 #' return default values and/or user-set values for details of fitting
+#' @param optControl list of control parameters for \code{optim}
+#' @param hessian_method method for numerically computing Hessian
+#' @export
 mle_control <- function(optControl=list(method="BFGS"),
-                        hessian_method=c("simple", "Richardson","none")) {
+                        hessian_method=c("simple","Richardson","none")) {
     hessian_method <- match.arg(hessian_method)
-    c(optControl, list(hessian_method=hessian_method))
-    ## lme4::namedList(optControl, hessian_method)
+    return(named_list(optControl, hessian_method))
 }
 
 #' @export
@@ -102,11 +104,12 @@ vcov.qzmle <- function(object, ...) {
   print(object$tvcov)
 }
 
-#' @export
-stdEr.qzmle <- function(object, ...){
-  check_dots(...)
-  print(sqrt(diag(object$tvcov)))
-}
+## need to define stdEr generic or import/export from misctools
+## #' @export
+## stdEr.qzmle <- function(object, ...){
+##   check_dots(...)
+##   print(sqrt(diag(object$tvcov)))
+## }
 
 
 ## not working
