@@ -11,31 +11,39 @@
 #' fit3 <- mle(y~dnorm(mean=ymean, sd=2),start=list(ymean=mean(d$y), ysd=2),data=d)
 #' @export
 
-#' @importFrom stats optim
-#' @importFrom numDeriv jacobian
+#' @importFrom stats optim optimHess
+#' @importFrom numDeriv jacobian hessian
 #' @importFrom MASS ginv
 mle <- function(form, start, data, control=mle_control()) {
     ff <- mkfun(form, data)
     argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
-    ## FIXME: make sure hessian=FALSE (we will want to compute our own hessian)
     opt <- do.call(stats::optim, c(argList,control$optControl))
     ## hess_ok <- FALSE
 
     ## FIXME:
     ##  if we don't have gradient, we'll need to use stats::optimHess() (if hessian_method=="simple")
     ##    *or* numDeriv::hessian() instead (if hessian_method=="Richardson")
-    ##
-    # repeat {
-    #     ## vcov is the inverse of hessian (jacobian of gradient)
-    #     ## FIXME: do something sensible if control$hessian_method=="none"
-         hess <- numDeriv::jacobian(ff$gr, opt$par, method=control$hessian_method)
-         tvcov <- MASS::ginv(hess) ## solve() gives error for non-invertible matrix
-    #     ##  if the Hessian is bad AND method=="simple"
-    #     ##    change method to "Richardson"
-    #     ##    else break
-    #     break
-    # }
-    dimnames(tvcov) <- list(opt$par, opt$par)
+    if (is.null(argList$gr)) {
+      if(control$hessian_method=="simple"){
+        hess <- stats::optimHess(argList)
+      }
+      else if (control$optControl=="Richardson"){
+        hess <- numDeriv::hessian(argList$fn, opt$par, method=control$optControl)
+      }
+    }
+    ## FIXME: do something sensible if control$hessian_method=="none"
+    else{
+      hess <- numDeriv::jacobian(ff$gr, opt$par, method=control$hessian_method)
+      if ((!hessian_check(hess)) && (control$hessian_method=="simple")) {
+       hess <- numDeriv::jacobian(ff$gr, opt$par, method="Richardson")
+      }
+    ##  if the Hessian is bad AND method=="simple"
+    ##    change method to "Richardson"
+    ##    else break
+    }
+
+    tvcov <- MASS::ginv(hess)
+    dimnames(tvcov) <- list(names(opt$par), names(opt$par))
 
     result <- list(
         call = match.call(),
@@ -47,18 +55,19 @@ mle <- function(form, start, data, control=mle_control()) {
     return(result)
 }
 
-## if nothing simple
-## if
 
 #' return default values and/or user-set values for details of fitting
 #' @param optControl list of control parameters for \code{optim}
 #' @param hessian_method method for numerically computing Hessian
 #' @export
-mle_control <- function(optControl=list(method="BFGS"),
+mle_control <- function(optControl=list(method="BFGS",
+                                        hessian=FALSE), ## we want to compute our own hessian
                         hessian_method=c("simple","Richardson","none")) {
     hessian_method <- match.arg(hessian_method)
     return(named_list(optControl, hessian_method))
 }
+
+
 
 #' @export
 print.qzmle <- function (x, ...) {
