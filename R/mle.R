@@ -18,31 +18,37 @@ mle <- function(form, start, data, control=mle_control()) {
     ff <- mkfun(form, data)
     argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
     opt <- do.call(stats::optim, c(argList,control$optControl))
-    ## hess_ok <- FALSE
-
-    ## FIXME:
-    ##  if we don't have gradient, we'll need to use stats::optimHess() (if hessian_method=="simple")
-    ##    *or* numDeriv::hessian() instead (if hessian_method=="Richardson")
-    if (is.null(argList$gr)) {
-      if(control$hessian_method=="simple"){
-        hess <- stats::optimHess(argList)
+    skip_hessian <- FALSE
+    if (control$hessian_method=="none"){
+      skip_hessian <- TRUE
+    } else {
+        ##  if we don't have gradient, we'll need to use stats::optimHess() (if hessian_method=="simple")
+        ##    *or* numDeriv::hessian() instead (if hessian_method=="Richardson")
+        if (is.null(argList$gr)) {
+        if(control$hessian_method=="simple"){
+          hess <- stats::optimHess(argList)
+        }
+        else if (control$optControl=="Richardson"){
+          hess <- numDeriv::hessian(argList$fn, opt$par, method=control$optControl)
+        }
       }
-      else if (control$optControl=="Richardson"){
-        hess <- numDeriv::hessian(argList$fn, opt$par, method=control$optControl)
+      ##  when we have gradient
+      ##  if the Hessian is bad AND method=="simple"
+      ##    change method to "Richardson"
+      else{
+        hess <- numDeriv::jacobian(ff$gr, opt$par, method=control$hessian_method)
+        if ((!hessian_check(hess)) && (control$hessian_method=="simple")) {
+        hess <- numDeriv::jacobian(ff$gr, opt$par, method="Richardson")
+        }
       }
     }
-    ## FIXME: do something sensible if control$hessian_method=="none"
-    else{
-      hess <- numDeriv::jacobian(ff$gr, opt$par, method=control$hessian_method)
-      if ((!hessian_check(hess)) && (control$hessian_method=="simple")) {
-       hess <- numDeriv::jacobian(ff$gr, opt$par, method="Richardson")
-      }
-    ##  if the Hessian is bad AND method=="simple"
-    ##    change method to "Richardson"
-    ##    else break
-    }
 
-    tvcov <- MASS::ginv(hess)
+    ## if hessian is "none"
+    if (skip_hessian) {
+      tvcov <- matrix(NA, length(opt$par), length(opt$par))
+    } else{
+      tvcov <- MASS::ginv(hess)
+    }
     dimnames(tvcov) <- list(names(opt$par), names(opt$par))
 
     result <- list(
