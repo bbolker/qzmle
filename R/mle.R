@@ -4,6 +4,7 @@
 #' @param form A formula in expression form of "y ~ model"
 #' @param start A list of initial values for p
 #' @param data A list of parameter in the formula with values in vectors
+#' @param fixed A list of parameter in the formula to keep fixed during optimization
 #' @param control control arguments to pass to optimizer
 #' @examples
 #' d <- data.frame(x=0:10,y=c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
@@ -14,8 +15,17 @@
 #' @importFrom stats optim optimHess
 #' @importFrom numDeriv jacobian hessian
 #' @importFrom MASS ginv
-mle <- function(form, start, data, control=mle_control()) {
+mle <- function(form, start, data, fixed=NULL, control=mle_control()) {
     ff <- mkfun(form, data)
+
+    ## check for fixed parameters
+    if (!is.null(fixed) && !is.list(fixed)) {
+      if (is.null(names(fixed)) || !is.vector(fixed)){
+        stop("'fixed' must be a named vector or named list")}
+      fixed <- as.list(fixed)
+    }
+    ## FIXME: check consistency with start values
+
     argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
     opt <- do.call(stats::optim, c(argList,control$optControl))
     skip_hessian <- FALSE
@@ -53,6 +63,7 @@ mle <- function(form, start, data, control=mle_control()) {
 
     result <- list(
         call = match.call(),
+        fixed = fixed,
         coefficients = opt$par,
         minuslogl = opt$value,
         tvcov = tvcov
@@ -103,6 +114,7 @@ summary.qzmle <- function(object, ...) {
   cat("\n-2 log L:", 2*object$minuslogl)
 } ## maybe break it down to print.summary.qzmle?
 
+#########################
 #' @export
 logLik.qzmle <- function(object, ...) {
   check_dots(...)
@@ -113,6 +125,7 @@ logLik.qzmle <- function(object, ...) {
 }
 
 
+#########################
 #' @export
 vcov.qzmle <- function(object, ...) {
   check_dots(...)

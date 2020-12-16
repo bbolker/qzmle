@@ -4,7 +4,7 @@
 \alias{mle}
 \title{Deriving MLE}
 \usage{
-mle(form, start, data, control = mle_control())
+mle(form, start, data, fixed = NULL, control = mle_control())
 }
 \arguments{
 \item{form}{A formula in expression form of "y ~ model"}
@@ -12,6 +12,8 @@ mle(form, start, data, control = mle_control())
 \item{start}{A list of initial values for p}
 
 \item{data}{A list of parameter in the formula with values in vectors}
+
+\item{fixed}{A list of parameter in the formula to keep fixed during optimization}
 
 \item{control}{control arguments to pass to optimizer}
 }
