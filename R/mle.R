@@ -111,7 +111,7 @@ summary.qzmle <- function(object, ...) {
   pval <- 2*stats::pnorm(-abs(zval))
   coefmat <- cbind(cmat,"z value"=zval,"Pr(z)"=pval)
   stats::printCoefmat(coefmat)
-  cat("\n-2 log L:", 2*object$minuslogl)
+  cat("\n-2 log L:", 2*object$minuslogl,"\n")
 } ## maybe break it down to print.summary.qzmle?
 
 #########################
