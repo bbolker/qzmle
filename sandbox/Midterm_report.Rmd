@@ -1,7 +1,7 @@
 ---
 title: "MATH4P06 Midterm Report"
 subtitle: "Incorporating Symbolic and Automatic Differentiation in a General-Purpose Likelihood Optimization Function"
-author: "Queenie Zeng - Ben Bolker"
+author: "Queenie Zeng (supervisor: Dr. Bolker)"
 date: "12/15/2020"
 output: pdf_document
 ---
@@ -17,13 +17,13 @@ The primary objective of this project is to re-implement a completed R package `
 
 ## Current Work
 
-When given a set of sample observations ${y_1, y_2, ..., y_n}$ that follows some parametric distribution such that $y \sim (f_\theta | \theta)$ with n number of parameters ($\theta_1, \theta_2, ..., \theta_n$), the maximum likelihood estimate (MLE) $\hat{\theta}$ of any given distribution parameter is the value that makes the observed data the most probable. This can be achieved by maximizing the likelihood function of the given distribution with respect to the give parameter ($L_n (\theta | y)$), or more often by the convention of minimizing the negative log-likelihood function such that $\hat{\theta} = {\operatorname{argmin}}_{\theta} (- \log L_n (\theta | y))$. We implemented this process in the wrapper function `mle()` (the function name is not finalized) around the general-purpose optimization function `optim()` in base R. Here is an example of fitting a simple model and applying the `summary` method for `qzmle` objects to show the parameters, standard errors (approximated using the inverse of hessian), and the corresponding p-values based on the z-scores. 
+When given a set of sample observations ${y_1, y_2, ..., y_n}$ that follows some parametric distribution such that $y \sim (f_\theta | \theta)$ with $n$ parameters ($\theta_1, \theta_2, ..., \theta_n$), the maximum likelihood estimate (MLE) $\hat{\theta}$ of any given distribution parameter is the value that makes the observed data the most probable. This can be achieved by maximizing the likelihood function of the given distribution with respect to the give parameter ($L_n (\theta | y)$), or more often by the convention of minimizing the negative log-likelihood function such that $\hat{\theta} = {\operatorname{argmin}}_{\theta} (- \log L_n (\theta | y))$. We implemented this process in the wrapper function `mle()` (the function name is not finalized) around the general-purpose nonlinear optimization function `optim()` in base R. Here is an example of fitting a simple model and applying the `summary` method for `qzmle` objects to show the parameters, standard errors (approximated using the inverse of the Hessian matrix), and the corresponding $p$-values based on the $z$-scores of the parameters. 
 
-&nbsp; 
 
 ```{r}
+library(qzmle)
 d <- data.frame(x=0:10,y=c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
-fit <- qzmle::mle(y~dnorm(mean=ymean, sd=2),start=list(ymean=mean(d$y), ysd=2),data=d)
+fit <- mle(y~dnorm(mean=ymean, sd=2),start=list(ymean=mean(d$y), ysd=2),data=d)
 summary(fit)
 ```
 
@@ -34,17 +34,6 @@ It is worth mentioning that this implementation automatically computes the gradi
 
 ## To-do for next term
 
-So far we have grasped a good understanding of architecture of `bbmle` and have built the basic mle function. The nearest goal is to developed all functionality and methods in `bbmle`, such as constructing likelihood profiles and confidence intervals for multiple parameters in a model. 
+So far we have grasped a good understanding of architecture of `bbmle` and the implementation of R packages and have built the basic mle function. The next goal is to develop all functionality and methods in `bbmle`, such as constructing likelihood profiles and confidence intervals for multiple parameters in a model. 
 
-The next priority is to set up the Template Model Builder (TMB) as the back end. The TMB is an integration of compiled C++ scripts to perform faster and more robust calculations. For instance, we want to incorporate automatic differentiation to evaluate more complex objective functions and derivatives without sacrificing computing time. Furthermore, TMB also allows for greater flexibility to perform other comprehensive analysis, such as fitting mixed-effects models and importance sampling. 
-
-
-
-
-
-
-
-
-
-
-
+The next priority is to set up the Template Model Builder (TMB) as the back end. The TMB uses compiled C++ scripts to perform faster and more robust calculations. For instance, we want to incorporate automatic differentiation to evaluate more complex objective functions and derivatives without sacrificing computing time. Furthermore, TMB also allows for greater flexibility to perform other comprehensive analysis, such as fitting mixed-effects models and importance sampling. 
