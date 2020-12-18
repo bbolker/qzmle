@@ -13,10 +13,6 @@ loglik_list <- list(
                params=c("mean","sd"))
 )
 
-## data frame lat, long
-y ~ dpois(exp(log_lambda), ...,
-          parameters = list(log_lambda = ~ poly(lat, long, 2))
-)
 
 #' Deriving the log-lik and gradients
 #' @param formula A formula in expression form of "y ~ model"
@@ -24,7 +20,7 @@ y ~ dpois(exp(log_lambda), ...,
 #' @examples
 #' set.seed(101)
 #' dd <- data.frame(y=rpois(100,lambda=1))
-#' fun1 <- mkfun(y~dpois(exp(log_mu)), data=dd)
+#' fun1 <- mkfun(y~dpois(exp(lambda)), data=dd)
 #' @export
 mkfun <- function(formula, data) {
     ## explicit error message: otherwise won't get caught until
