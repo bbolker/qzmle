@@ -12,7 +12,7 @@ devtools::load_all()
 
 ## Objective
 
-The primary objective of this project is to re-implement a completed R package `qzmle` for maximum likelihood estimation and analysis that follows the principles and includes all functionality in the current R package `bbmle`, while providing more extensive methods and reduced computing time. It is aimed to be more robust and inclusive than the `mle()` function that comes with R by default.
+The primary objective of this project is to re-implement a completed R package `qzmle` for maximum likelihood estimation and analysis that follows the principles and includes all functionality in the current R package `bbmle`, while providing more extensive methods and reduced computing time. It is aimed to be more robust and inclusive than the `mle()` function that comes with R by default. The source code can be viewed here: https://github.com/queezzz/qzmle. 
 
 
 ## Current Work
@@ -22,8 +22,8 @@ When given a set of sample observations ${y_1, y_2, ..., y_n}$ that follows some
 
 ```{r}
 library(qzmle)
-d <- data.frame(x=0:10,y=c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
-fit <- mle(y~dnorm(mean=ymean, sd=2),start=list(ymean=mean(d$y), ysd=2),data=d)
+dd <- data.frame(y = rpois(100, lambda=3))
+fit <- mle(y~dpois(lambda=ymean),start=list(ymean=mean(dd$y)),data=dd)
 summary(fit)
 ```
 
@@ -36,4 +36,5 @@ It is worth mentioning that this implementation automatically computes the gradi
 
 So far we have grasped a good understanding of architecture of `bbmle` and the implementation of R packages and have built the basic mle function. The next goal is to develop all functionality and methods in `bbmle`, such as constructing likelihood profiles and confidence intervals for multiple parameters in a model. 
 
-The next priority is to set up the Template Model Builder (TMB) as the back end. The TMB uses compiled C++ scripts to perform faster and more robust calculations. For instance, we want to incorporate automatic differentiation to evaluate more complex objective functions and derivatives without sacrificing computing time. Furthermore, TMB also allows for greater flexibility to perform other comprehensive analysis, such as fitting mixed-effects models and importance sampling. 
+The next priority is to set up the Template Model Builder (TMB) as the back end. The TMB uses compiled C++ scripts to perform faster and more robust calculations. For instance, we want to incorporate automatic differentiation to evaluate more complex objective functions and derivatives without sacrificing computing time. Furthermore, TMB also allows for greater flexibility to perform other comprehensive analysis, such as fitting mixed-effects models and importance sampling.
+
