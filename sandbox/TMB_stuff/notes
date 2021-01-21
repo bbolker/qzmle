@@ -1,0 +1,7 @@
+1. write a cpp file (model template)
+2. compile using TMB::compile()
+3. load model object dyn.load(TMB::dynlib)
+4. make object (data/parameters) to pass to TMB model (TMB::MakeADFun())
+5. minimize objective funtion with optim()
+
+
