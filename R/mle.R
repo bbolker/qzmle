@@ -9,7 +9,8 @@
 #' @examples
 #' d <- data.frame(x=0:10,y=c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
 #' fit0 <- mle(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
-#' fit3 <- mle(y~dnorm(mean=ymean, sd=2),start=list(ymean=mean(d$y), ysd=2),data=d)
+#' ss <- list(ymean=mean(d$y), logsd=log(sd(d$y)))
+#' fit3 <- mle(y~dnorm(mean=ymean, sd=exp(logsd)),start=ss,data=d)
 #' @export
 
 #' @importFrom stats optim optimHess
@@ -17,6 +18,7 @@
 #' @importFrom MASS ginv
 mle <- function(form, start, data, fixed=NULL, control=mle_control()) {
     ff <- mkfun(form, data)
+
 
     ## check for fixed parameters
     if (!is.null(fixed) && !is.list(fixed)) {
@@ -26,8 +28,10 @@ mle <- function(form, start, data, fixed=NULL, control=mle_control()) {
     }
     ## FIXME: check consistency with start values
 
-    argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
+    argList <- list(par=unlist(start), fn=ff$fn,
+                    gr=ff$gr)
     opt <- do.call(stats::optim, c(argList,control$optControl))
+
     skip_hessian <- FALSE
     if (control$hessian_method=="none"){
       skip_hessian <- TRUE

@@ -54,7 +54,6 @@ mkfun <- function(formula, data) {
     ## with respect to all of its parameters
     LL <- loglik_list[[ddistn]]$expr
     mnames <- loglik_list[[ddistn]]$params
-    ## setdiff(all.vars(LL), "x")  ## response var should be the only non-parameter
     d0 <- Deriv::Deriv(LL, mnames) ## evaluate all of the arguments to the log-likelihood
     arglist_eval <- lapply(arglist, eval, pars_and_data) ##mean, sd
     arglist_eval$x <- eval(response, pars_and_data) ##evaluate response variable and assign its value to 'x'
@@ -76,9 +75,11 @@ mkfun <- function(formula, data) {
             glist[[m]] <- 0
         } else {
             for (p in parnames){
+              if(p %in% all.vars(arglist[[m]])) {
                 dlist <- list()
                 dlist[[m]][[p]] <- eval(Deriv::Deriv(arglist[[m]],p), pars_and_data)
                 glist[[m]][[p]] <- -sum(d2*dlist[[m]][[p]])
+              }
             } ## p in parnames
         } ## arg is not constant
     } ## m in mnames
@@ -92,3 +93,4 @@ mkfun <- function(formula, data) {
   }
   return(list(fn = fn, gr = gr))
 }
+

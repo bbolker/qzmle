@@ -4,11 +4,11 @@
 #' @param maxsteps number of steps to take looking for zmax
 #' @param alpha max alpha level
 #' @param zmax max log-likelihood difference to search to
-#' @param del stepsize
+#' @param delta stepsize
 
 profilefun <- function (fitted, which = 1:p, maxsteps = 100,
                         alpha=0.1, zmax=sqrt(qchisq(1 - alpha/2, p)),
-                        del = zmax/5, ...) {
+                        delta = zmax/5, ...) {
   Pnames <- names(B0 <- fitted$coefficients)
   p <- length(Pnames)
   std.err <- sqrt(diag(fitted$tvcov))

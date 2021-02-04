@@ -16,4 +16,4 @@ RoxygenNote: 7.1.1
 Imports: 
 	Deriv, stats, numDeriv, MASS 
 Suggests: 
-    testthat
+    testthat, bbmle

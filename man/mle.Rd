@@ -23,5 +23,6 @@ Deriving MLE
 \examples{
 d <- data.frame(x=0:10,y=c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
 fit0 <- mle(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
-fit3 <- mle(y~dnorm(mean=ymean, sd=2),start=list(ymean=mean(d$y), ysd=2),data=d)
+ss <- list(ymean=mean(d$y), logsd=log(sd(d$y)))
+fit3 <- mle(y~dnorm(mean=ymean, sd=exp(logsd)),start=ss,data=d)
 }
