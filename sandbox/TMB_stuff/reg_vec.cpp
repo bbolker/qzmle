@@ -13,7 +13,7 @@ PARAMETER(log_sigma);
 
 Type sigma = exp(log_sigma);
 
-int n = y.size();
+//int n = y.size();
 
 Type nll = 0.0;
 

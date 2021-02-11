@@ -17,3 +17,5 @@ test_that("Normal dist. works", {
   expect_equal(bbmle::coef(bbfit), qzfit$coefficients)
   }
 })
+
+

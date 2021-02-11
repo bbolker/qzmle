@@ -5,7 +5,7 @@ dyn.load(dynlib("reg"))
 set.seed(123)
 x <- runif(20, 1, 10)
 y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
-plot(x, y)
+##plot(x, y)
 
 obj <- MakeADFun(
   data = list(x = x, y = y),

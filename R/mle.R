@@ -5,7 +5,7 @@
 #' @param start A list of initial values for p
 #' @param data A list of parameter in the formula with values in vectors
 #' @param fixed A list of parameter in the formula to keep fixed during optimization
-#' @param control control arguments to pass to optimizer
+#' @param control A list of parameter to pass to optimizer (See `mle_control`)
 #' @examples
 #' d <- data.frame(x=0:10,y=c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
 #' fit0 <- mle(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
@@ -82,10 +82,20 @@ mle <- function(form, start, data, fixed=NULL, control=mle_control()) {
 #' @param hessian_method method for numerically computing Hessian
 #' @export
 mle_control <- function(optControl=list(method="BFGS",
-                                        hessian=FALSE), ## we want to compute our own hessian
+                                        control=list(),
+                                        ...),
                         hessian_method=c("simple","Richardson","none")) {
-    hessian_method <- match.arg(hessian_method)
-    return(named_list(optControl, hessian_method))
+
+  ## Don't allow other optimizer methods (yet)
+  if (is.null(optControl$method) || (optControl$method!='BFGS')){
+      optControl$method <- 'BFGS'
+  }
+
+  ## we want to compute our own hessian
+  optControl$hessian <- FALSE
+
+  hessian_method <- match.arg(hessian_method)
+  return(named_list(optControl, hessian_method))
 }
 
 

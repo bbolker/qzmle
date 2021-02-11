@@ -1,25 +1,15 @@
 
-#include <TMB.hpp>
+  #include <TMB.hpp>
 
-template<class Type>
-Type objective_function<Type>::operator() () {
+  template<class Type>
+  Type objective_function<Type>::operator() () { DATA_VECTOR(x); DATA_VECTOR(y); PARAMETER(b0); PARAMETER(b1); Type nll = 0.0; nll = -sum(dnorm(+, true)); return nll; }
 
-DATA_VECTOR(x);
-DATA_VECTOR(y);
+  #include <TMB.hpp>
 
-PARAMETER(b0);
-PARAMETER(b1);
-PARAMETER(log_sigma);
+  template<class Type>
+  Type objective_function<Type>::operator() () { DATA_VECTOR(x); DATA_VECTOR(y); PARAMETER(b0); PARAMETER(b1); Type nll = 0.0; nll = -sum(dnorm(b0, true)); return nll; }
 
-Type sigma = exp(log_sigma);
+  #include <TMB.hpp>
 
-int n = y.size();
-
-Type nll = 0.0;
-
-for(int i = 0; i < n; i++){
-nll -= dnorm(y[i], b0 + b1 * x[i], sigma, true);
-}
-
-return nll;
-}
+  template<class Type>
+  Type objective_function<Type>::operator() () { DATA_VECTOR(x); DATA_VECTOR(y); PARAMETER(b0); PARAMETER(b1); Type nll = 0.0; nll = -sum(dnorm(b1 * x, true)); return nll; }

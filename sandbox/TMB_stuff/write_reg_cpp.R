@@ -9,18 +9,15 @@ DATA_VECTOR(y);
 
 PARAMETER(b0);
 PARAMETER(b1);
-PARAMETER(log_sigma);
+//PARAMETER(log_sigma);
 
-Type sigma = exp(log_sigma);
-
-int n = y.size();
+//Type sigma = exp(log_sigma);
 
 Type nll = 0.0;
 
-for(int i = 0; i < n; i++){
-nll -= dnorm(y[i], b0 + b1 * x[i], sigma, true);
-}
+nll = -sum(dnorm(y, b0 + b1 * x, true)); //sigma
 
 return nll;
+
 }"
 write(tmb_model, file = "reg.cpp")

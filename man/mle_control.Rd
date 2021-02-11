@@ -6,7 +6,8 @@
 \usage{
 mle_control(
   optControl = list(method = "BFGS", hessian = FALSE),
-  hessian_method = c("simple", "Richardson", "none")
+  hessian_method = c("simple", "Richardson", "none"),
+  ...
 )
 }
 \arguments{
