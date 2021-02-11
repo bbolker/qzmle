@@ -7,7 +7,7 @@
 #' x <- runif(20, 1, 10)
 #' y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
 #' form <- y ~ dnorm(b0 + b1 * x)
-#' TMB_mle_function(form, parameters=list(b0=0,b1=0), data = list(x=x,y=y))
+#' TMB_mle_function(form, parameter=list(b0=0,b1=0), data = list(x=x,y=y))
 
 TMB_mle_function <- function(formula,
                              parameter,
@@ -16,8 +16,8 @@ TMB_mle_function <- function(formula,
     data_var <- c()
 
     ## check data
-    for (i in c(1:length(names(data)))){
-      if(class(data[[i]])=='character') {
+    for (i in seq_along(data)) {
+      if (is.character(data[[i]])) {
         stop("Cannot process string data")
       }
     ## store data
@@ -46,8 +46,7 @@ TMB_mle_function <- function(formula,
   Type objective_function<Type>::operator() () { "
 
   nll <- sprintf("Type nll = 0.0; nll = -sum(%s(%s, true)); return nll; }",
-                 as.character(RHS[[1]]), as.character(RHS[[2]]))
-
+                 as.character(RHS[[1]]), deparse(RHS[[2]]))
 
   model <- paste0(header, data_var, params, nll)
   return(model)
