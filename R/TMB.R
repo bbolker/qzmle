@@ -13,16 +13,17 @@ TMB_mle_function <- function(formula,
                              parameter,
                              data=NULL) {
   if (!is.null(data)) {
-    data_var <- c()
+    data_var <- character(length(data))
 
     ## check data
     for (i in seq_along(data)) {
-      if (is.character(data[[i]])) {
-        stop("Cannot process string data")
-      }
-    ## store data
-    data_var <- paste0(data_var, sprintf("DATA_VECTOR(%s); ", names(data)[i]))
+        if (is.character(data[[i]])) {
+            stop("Cannot process string data")
+        }
+        ## store data
+        data_var[i] <- sprintf("DATA_VECTOR(%s);", names(data)[i])
     }
+    data_var <- paste(data_var, collapse="\n")
   }
 
   ## parse distribution
@@ -31,7 +32,7 @@ TMB_mle_function <- function(formula,
 
   ## store all parameters
   params <- c()
-  for (i in c(1:length(names(parameter)))) {
+  for (i in c(1:length(names(parameter)))) {  ## BMB: seq_along etc.
     params <- paste0(params, sprintf("PARAMETER(%s); ", names(parameter)[i]))
   }
 
@@ -45,7 +46,7 @@ TMB_mle_function <- function(formula,
   template<class Type>
   Type objective_function<Type>::operator() () { "
 
-  nll <- sprintf("Type nll = 0.0; nll = -sum(%s(%s, true)); return nll; }",
+  nll <- sprintf("Type nll = 0.0;\nnll = -sum(%s(%s, true));\nreturn nll;\n}",
                  as.character(RHS[[1]]), deparse(RHS[[2]]))
 
   model <- paste0(header, data_var, params, nll)

@@ -1,0 +1,72 @@
+link functions:
+
+For example:
+
+c(sd="log")
+
+This means I want to fit sd on the log scale; the link function is log() and the inverse-link function is exp()
+
+The code should distinguish when we're using the parameter on the original scale and when we're using it on the
+link scale.
+
+For example,
+
+** PARAMETER log_sd;
+
+plinkfun <- function(pname, linkname) {
+   if (linkname=="identity") return(pname)
+   return(paste(linkname,pname,sep="_"))
+}
+
+## see presentation by Jenny Bryan
+
+We also need a statement to run the inverse-link transformation
+
+** Type sd = exp(log_sd);
+
+OR
+
+**Type sd;
+**sd = exp(log_sd);
+
+
+There must be a list somewhere in the code that defines links and their inverse links
+
+
+
+invlinkfun <- function(pname, linkname) {
+   switch(linkname,
+      log=sprintf("%s = exp(%s)", pname, plinkfun(pname, linkname)),
+      logit=sprintf("%s = invlogit(%s))", pname, plinkfun(pname, linkname))
+      )
+}
+
+IF there's a built-in inverse-logit (logistic) function in TMB that would be slightly better than 1/(1+exp(-x))
+
+Map(invlinkfun, pnames, linknames)
+
+1. This should work in 'regular' R-based mle, not just in TMB-based mle (mlefun())
+
+mle(y~dnorm(b0+b1*x, sd), links=c(sd="log"))
+
+make.link("logit")$linkinv
+make.link(linkfun)$linkinv(par_value)
+make.link("log")$linkinv
+
+## OPTIONALLY
+
+in the R code ...
+
+2. automatically translate starting values to the link scale
+
+start= list(b0=1,b2=1,sd=4)  ->  list(b0=1,b2=1,log_sd=log(4))
+
+3. report coefficients on either the link scale or the original scale
+
+remotes::install("parksw3/fitode")
+library(fitode)
+getMethod("coef",signature="fitode")
+
+
+
+
