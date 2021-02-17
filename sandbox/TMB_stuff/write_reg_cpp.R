@@ -15,7 +15,7 @@ PARAMETER(b1);
 
 Type nll = 0.0;
 
-nll = -sum(dnorm(y, b0 + b1 * x, true)); //sigma
+nll = -sum(dnorm(y, b0 + b1 * x, sd, true)); //sigma
 
 return nll;
 

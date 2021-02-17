@@ -6,8 +6,8 @@
 #' set.seed(123)
 #' x <- runif(20, 1, 10)
 #' y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
-#' form <- y ~ dnorm(b0 + b1 * x)
-#' TMB_mle_function(form, parameter=list(b0=0,b1=0), data = list(x=x,y=y))
+#' form <- y ~ dnorm(b0 + b1 * x, sd)
+#' TMB_mle_function(form, parameter=list(b0=0,b1=0, sd=sd(y)), data = list(x=x,y=y))
 
 TMB_mle_function <- function(formula,
                              parameter,
@@ -27,12 +27,13 @@ TMB_mle_function <- function(formula,
   }
 
   ## parse distribution
+  y <- formula[[2]]
   RHS <- formula[[3]]
   ddistn <- as.character(RHS[[1]])
 
   ## store all parameters
   params <- c()
-  for (i in c(1:length(names(parameter)))) {  ## BMB: seq_along etc.
+  for (i in seq_along(parameter)) {
     params <- paste0(params, sprintf("PARAMETER(%s); ", names(parameter)[i]))
   }
 
@@ -40,18 +41,19 @@ TMB_mle_function <- function(formula,
 
 
   ## cpp script
-  header <- "
-  #include <TMB.hpp>
+  header <- "#include <TMB.hpp>
 
   template<class Type>
   Type objective_function<Type>::operator() () { "
 
-  nll <- sprintf("Type nll = 0.0;\nnll = -sum(%s(%s, true));\nreturn nll;\n}",
-                 as.character(RHS[[1]]), deparse(RHS[[2]]))
+  nll <- sprintf("Type nll = 0.0;\nnll = -sum(%s(%s, %s, true));\nreturn nll;\n}",
+                 as.character(RHS[[1]]), as.character(y), toString(RHS[-1])) ## not stable
 
   model <- paste0(header, data_var, params, nll)
-  return(model)
-  ##write(model, file='reg.cpp')
+
+  write(model, file='template.cpp')
+  TMB::compile("template.cpp")
+  print("finish compiling")
 }
 
 
