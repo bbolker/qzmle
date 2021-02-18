@@ -15,6 +15,8 @@ all_links <- c("logit"="invlogit(%s)",
                "1/mu^2"="1/sqrt(%s)",
                "inverse"="(1/%s)")
 
+## more general approach to constructing the TMB statements
+##  to transform stuff ... not quite finished!
 if (FALSE) {
     pname <- c("a","h","bad")
     linkname <- c("log","identity","cloglog")
