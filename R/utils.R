@@ -1,9 +1,35 @@
 ## Link functions for TMB
 ## make parameter name
-plinkfun <- function(pname, linkname){
-  if (linkname=="identity") return(pname)
-  return(paste(linkname, pname, sep="_"))
+plinkfun <- function(pname, linkname) {
+  ifelse(linkname=="identity",pname,
+         paste(linkname, pname, sep="_"))
 }
+
+all_links <- c("logit"="invlogit(%s)",
+               "probit"="pnorm(%s)",
+               "cauchit"=NA,
+               "cloglog"=NA,
+               "identity"="%s",
+               "log"="exp(%s)",
+               "sqrt"="%s**2",
+               "1/mu^2"="1/sqrt(%s)",
+               "inverse"="(1/%s)")
+
+if (FALSE) {
+    pname <- c("a","h","bad")
+    linkname <- c("log","identity","cloglog")
+    trans_pnames <- unlist(Map(plinkfun,pname,linkname))
+    result <- sprintf(all_links[linkname], trans_pnames)
+    bad_links <- which(result=="NA")
+    if (length(bad_links)>0) {
+        stop("undefined link(s): ",
+             paste(linkname[bad_links], collapse=", "))
+    }
+        
+}
+## put the rest of the pieces together ...
+## then maybe filter out the identity ones
+##  whatever[linkname!="identity"]
 
 ## make parameter name
 invlinkfun <- function(pname, linkname) {
