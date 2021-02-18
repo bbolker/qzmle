@@ -1,28 +1,14 @@
 #' @importFrom Deriv Deriv
-
-## List of log-lik function for different distributions
-
-loglik_list <- list(
-  dpois = list(expr=expression(x * log(lambda) - lambda - lfactorial(x)),
-               params=c("lambda")),
-  dnorm = list(expr=expression(## -log(2*4*(4*atan(1/5)-atan(1/239)))/2 -
-                   - log((2*pi)^0.5)
-                   - log(sd)
-                   - (x-mean)^2/(2*sd^2)),
-               ## this is another
-               params=c("mean","sd"))
-)
-
-
 #' Deriving the log-lik and gradients
 #' @param formula A formula in expression form of "y ~ model"
 #' @param data A list of parameter in the formula with values in vectors
+#' @param link Link function for parameters (default is identity)
 #' @examples
 #' set.seed(101)
 #' dd <- data.frame(y=rpois(100,lambda=1))
 #' fun1 <- mkfun(y~dpois(exp(lambda)), data=dd)
 #' @export
-mkfun <- function(formula, data) {
+mkfun <- function(formula, data, link="identity") {
     ## explicit error message: otherwise won't get caught until
     ## much later
   if(missing(data)) {
@@ -31,6 +17,7 @@ mkfun <- function(formula, data) {
   RHS <- formula[[3]] # dnorm(mean = b0 + b1 * latitude^2, sd = 1)
   response <- formula[[2]] # always y
   ddistn <- as.character(RHS[[1]]) ## dnorm /// get the name of distribution variable
+  link_f <- make.link(link)$linkinv
   arglist <- as.list(RHS[-1]) ## $lambda = (b0 * latitude^2), sd///delete function name
   arglist1 <- c(
     list(x = response), ##assign x to y)
@@ -54,7 +41,7 @@ mkfun <- function(formula, data) {
     ## with respect to all of its parameters
     LL <- loglik_list[[ddistn]]$expr
     mnames <- loglik_list[[ddistn]]$params
-    d0 <- Deriv::Deriv(LL, mnames) ## evaluate all of the arguments to the log-likelihood
+    d0 <- Deriv::Deriv(LL, link_f(mnames)) ## evaluate all of the arguments to the log-likelihood
     arglist_eval <- lapply(arglist, eval, pars_and_data) ##mean, sd
     arglist_eval$x <- eval(response, pars_and_data) ##evaluate response variable and assign its value to 'x'
     d1 <- eval(d0, arglist_eval) ## sub d0 - compute the deriv of log_lik wrt to its parameters
@@ -77,7 +64,7 @@ mkfun <- function(formula, data) {
             for (p in parnames){
               if(p %in% all.vars(arglist[[m]])) {
                 dlist <- list()
-                dlist[[m]][[p]] <- eval(Deriv::Deriv(arglist[[m]],p), pars_and_data)
+                dlist[[m]][[p]] <- eval(Deriv::Deriv(link_f(arglist[[m]]),p), pars_and_data)
                 glist[[m]][[p]] <- -sum(d2*dlist[[m]][[p]])
               }
             } ## p in parnames

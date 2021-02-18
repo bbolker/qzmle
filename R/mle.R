@@ -6,6 +6,7 @@
 #' @param data A list of parameter in the formula with values in vectors
 #' @param fixed A list of parameter in the formula to keep fixed during optimization
 #' @param control A list of parameter to pass to optimizer (See `mle_control`)
+#' @param link link function for parameters (identity link as default)
 #' @examples
 #' d <- data.frame(x=0:10,y=c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
 #' fit0 <- mle(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
@@ -14,10 +15,12 @@
 #' @export
 
 #' @importFrom stats optim optimHess
+#' @importFrom stats make.link
 #' @importFrom numDeriv jacobian hessian
 #' @importFrom MASS ginv
-mle <- function(form, start, data, fixed=NULL, control=mle_control()) {
-    ff <- mkfun(form, data)
+mle <- function(form, start, data, fixed=NULL, control=mle_control(),
+                link='identity') {
+    ff <- mkfun(form, data, link)
 
 
     ## check for fixed parameters
@@ -154,15 +157,9 @@ vcov.qzmle <- function(object, ...) {
 ## }
 
 
-## not working
-## fit2 <- mle(y~dnorm(mean=ymean, sd=ysd),start=list(ymean=mean(d$y), ysd=sd(d$y)),data=d)
 
 
-## compare with bbmle
-# fit1 <- bbmle::mle2(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
-# fit4 <- bbmle::mle2(y~dnorm(mean=ymean, sd=2),start=list(ymean=mean(d$y),ysd=2),data=d)
 
-## twoWords, two.words, two_words, twowords, TwoWords
 check_dots <- function(...) {
     if (length(list(...))>0) {
         stop("unused parameters passed to method")

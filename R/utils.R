@@ -1,5 +1,31 @@
+## Link functions for TMB
+## make parameter name
+plinkfun <- function(pname, linkname){
+  if (linkname=="identity") return(pname)
+  return(paste(linkname, pname, sep="_"))
+}
+
+## make parameter name
+invlinkfun <- function(pname, linkname) {
+  switch (linkname,
+    log = sprintf("%s = exp(%s)", pname, plinkfun(pname, linkname)),
+    logit = sprintf("%s = invlogit(%s)", pname, plinkfun(pname, linkname))
+  )
+}
+
+
+## List of log-lik function for different distributions
+loglik_list <- list(
+  dpois = list(expr=expression(x * log(lambda) - lambda - lfactorial(x)),
+               params=c("lambda")),
+  dnorm = list(expr=expression(## -log(2*4*(4*atan(1/5)-atan(1/239)))/2 -
+                   - log((2*pi)^0.5)
+                   - log(sd)
+                   - (x-mean)^2/(2*sd^2)),
+               params=c("mean","sd"))
+)
+
 ## copied from lme4
-#'
 named_list <- function (...)
 {
     L <- list(...)
