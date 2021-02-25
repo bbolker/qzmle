@@ -2,11 +2,12 @@
 #' Deriving MLE
 #' @name mle
 #' @param form A formula in expression form of "y ~ model"
-#' @param start A list of initial values for p
+#' @param start A list of initial values for parameters
 #' @param data A list of parameter in the formula with values in vectors
 #' @param fixed A list of parameter in the formula to keep fixed during optimization
 #' @param control A list of parameter to pass to optimizer (See `mle_control`)
 #' @param link link function for parameters (identity link as default)
+#' @param method base R or TMB integration
 #' @examples
 #' d <- data.frame(x=0:10,y=c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
 #' fit0 <- mle(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
@@ -14,15 +15,34 @@
 #' fit3 <- mle(y~dnorm(mean=ymean, sd=exp(logsd)),start=ss,data=d)
 #' @export
 
-#' @importFrom stats optim optimHess
-#' @importFrom stats make.link
+#' @importFrom stats optim optimHess make.link
 #' @importFrom numDeriv jacobian hessian
 #' @importFrom MASS ginv
 mle <- function(form, start, data, fixed=NULL, control=mle_control(),
-                link='identity') {
-    ff <- mkfun(form, data, link)
+                links=NULL, method=NULL) {
+
+    ## translate parameters to link scale
+    plinkscale <- numeric(length(start))
+    names(plinkscale) <- plinkfun(names(start), links)
+    for (i in seq_along(plinkscale)) {
+      mm <- make.link(links[[i]])
+      plinkscale[[i]] <- mm$linkfun(start[[i]])
+    }
 
 
+    ## calling TMBintegration if chose to
+    if (method == 'TMB'){
+      ff <- TMB_mkfun(form, data, parameter=plinkscale, links)
+    } else{
+      ff <- mkfun(form, data, link)
+      argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
+    }
+
+    ## optim work
+    opt <- do.call(stats::optim, c(argList,control$optControl))
+
+
+    ## ------------
     ## check for fixed parameters
     if (!is.null(fixed) && !is.list(fixed)) {
       if (is.null(names(fixed)) || !is.vector(fixed)){
@@ -30,10 +50,6 @@ mle <- function(form, start, data, fixed=NULL, control=mle_control(),
       fixed <- as.list(fixed)
     }
     ## FIXME: check consistency with start values
-
-    argList <- list(par=unlist(start), fn=ff$fn,
-                    gr=ff$gr)
-    opt <- do.call(stats::optim, c(argList,control$optControl))
 
     skip_hessian <- FALSE
     if (control$hessian_method=="none"){
@@ -85,8 +101,7 @@ mle <- function(form, start, data, fixed=NULL, control=mle_control(),
 #' @param hessian_method method for numerically computing Hessian
 #' @export
 mle_control <- function(optControl=list(method="BFGS",
-                                        control=list(),
-                                        ...),
+                                        control=list()),
                         hessian_method=c("simple","Richardson","none")) {
 
   ## Don't allow other optimizer methods (yet)

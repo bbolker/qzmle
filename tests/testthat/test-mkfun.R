@@ -91,8 +91,6 @@ test_that("normal with two parameter mean", {
   expect_equal(ff4$fn(c(b0=1, b1=2)),
                -sum(normal(m(b0=1, b1=2), sd=1)))
 
-### need to test for gradient - numDeriv doesnt test multiple params
-
 })
 
 

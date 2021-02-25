@@ -33,10 +33,23 @@ trans_parnames <- function(p) {
     regex <- sprintf("(%s)_", paste(all_links,collapse="|"))
     gsub(regex,"",p)
 }
+
+## new example of mle
+fit3 <- mle(y~dnorm(mean=a+h*q, sd=exp(r)),
+               links=c(a="log", h="identity", q="logit", r="log"),
+               start=ss,data=d)
+ss <- c(a=1, h=2, q=3, r=4)
+
+plinkname <- numeric(length(ss))
+names(plinkname) <- plinkfun(names(ss), links)
+
+
 ## params on link scale
 orig_parvec <- c(log_a=-1, h = 2, logit_q=3, cloglog_r=-2)
 parvec <- numeric(length(orig_parvec))
 names(parvec) <- trans_parnames(names(orig_parvec))
+
+## inverse link
 g <- numeric(length(orig_parvec))
 for (i in seq_along(linkvec)) {
     mm <- make.link(linkvec[i])  ## get the whole 'link' object
@@ -64,7 +77,7 @@ Deriv(expression(log(x)),exp("x"))
 
 ## evaluate at the value of log_a
 ## 1/deriv(exp) = deriv(log)
-## should be the same as the deriv d(log(y))/dy 
+## should be the same as the deriv d(log(y))/dy
 ## of the LINK function at the RESPONSE value
 ## i.e. 1/y = 1/invlink(x) = 1/exp(x)
 ## x == log(a) [LINK scale] , y == a [RESPONSE scale]
@@ -94,3 +107,25 @@ b <- body(make.link)
 b[[2]] ## guts of the function
 linknames <- names(b[[2]])
 linknames <- linknames[nzchar(linknames)]
+
+
+
+## Can use deriv function on make.link
+t <- body(make.link('log')$linkfun)
+Deriv::Deriv(t, all.vars(t[[2]]))
+
+
+## more general approach to constructing the TMB statements
+##  to transform stuff ... not quite finished!
+if (FALSE) {
+  pname <- c("a","h","bad")
+  linkname <- c("log","identity","cloglog")
+  trans_pnames <- unlist(Map(plinkfun,pname,linkname))
+  result <- sprintf(all_links[linkname], trans_pnames)
+  bad_links <- which(result=="NA")
+  if (length(bad_links)>0) {
+    stop("undefined link(s): ",
+         paste(linkname[bad_links], collapse=", "))
+  }
+
+}

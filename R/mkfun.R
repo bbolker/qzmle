@@ -1,29 +1,29 @@
-#' @importFrom Deriv Deriv
 #' Deriving the log-lik and gradients
 #' @param formula A formula in expression form of "y ~ model"
 #' @param data A list of parameter in the formula with values in vectors
-#' @param link Link function for parameters (default is identity)
+#' @param link Link function for each parameters
 #' @examples
 #' set.seed(101)
 #' dd <- data.frame(y=rpois(100,lambda=1))
 #' fun1 <- mkfun(y~dpois(exp(lambda)), data=dd)
+#' fun2 <- mkfun(y~dnorm(mean = b0 + b1 * latitude^2, sd = 1), data=dd)
 #' @export
-mkfun <- function(formula, data, link="identity") {
-    ## explicit error message: otherwise won't get caught until
-    ## much later
+
+#' @importFrom Deriv Deriv
+mkfun <- function(formula, data, links=NULL) {
   if(missing(data)) {
     stop("missing data...") # if no data
   }
   RHS <- formula[[3]] # dnorm(mean = b0 + b1 * latitude^2, sd = 1)
   response <- formula[[2]] # always y
   ddistn <- as.character(RHS[[1]]) ## dnorm /// get the name of distribution variable
-  link_f <- make.link(link)$linkinv
   arglist <- as.list(RHS[-1]) ## $lambda = (b0 * latitude^2), sd///delete function name
   arglist1 <- c(
     list(x = response), ##assign x to y)
     arglist,
     list(log = TRUE)
   )
+
   fn <- function(pars) { ## parameter
     pars_and_data <- c(as.list(pars), data) ## list of b0,b1,y,lattitude
     r <- with(

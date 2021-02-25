@@ -5,30 +5,17 @@ plinkfun <- function(pname, linkname) {
          paste(linkname, pname, sep="_"))
 }
 
-all_links <- c("logit"="invlogit(%s)",
-               "probit"="pnorm(%s)",
-               "cauchit"=NA,
-               "cloglog"=NA,
-               "identity"="%s",
-               "log"="exp(%s)",
-               "sqrt"="%s**2",
-               "1/mu^2"="1/sqrt(%s)",
-               "inverse"="(1/%s)")
 
-## more general approach to constructing the TMB statements
-##  to transform stuff ... not quite finished!
-if (FALSE) {
-    pname <- c("a","h","bad")
-    linkname <- c("log","identity","cloglog")
-    trans_pnames <- unlist(Map(plinkfun,pname,linkname))
-    result <- sprintf(all_links[linkname], trans_pnames)
-    bad_links <- which(result=="NA")
-    if (length(bad_links)>0) {
-        stop("undefined link(s): ",
-             paste(linkname[bad_links], collapse=", "))
-    }
-        
+## names of all allowed links (except 'identity')
+all_links <- c("log","logit","cloglog","sqrt","inverse","log10")
+trans_parnames <- function(p) {
+    regex <- sprintf("(%s)_", paste(all_links,collapse="|"))
+    gsub(regex,"",p)
 }
+
+
+
+
 ## put the rest of the pieces together ...
 ## then maybe filter out the identity ones
 ##  whatever[linkname!="identity"]
