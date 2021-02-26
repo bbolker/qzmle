@@ -129,3 +129,18 @@ if (FALSE) {
   }
 
 }
+
+
+
+## put the rest of the pieces together ...
+## then maybe filter out the identity ones
+##  whatever[linkname!="identity"]
+
+## make parameter name
+invlinkfun <- function(pname, linkname) {
+  switch (linkname,
+          log = sprintf("%s = exp(%s)", pname, plinkfun(pname, linkname)),
+          logit = sprintf("%s = invlogit(%s)", pname, plinkfun(pname, linkname))
+  )
+}
+

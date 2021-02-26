@@ -9,8 +9,10 @@
 #' y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
 #' form <- y ~ dnorm(b0 + b1 * x, log_sigma)
 #' links <- list(sigma="log")
-#' TMB_template(form, parameter=list(b0=0,b1=0, log_sigma=sd(y)),
-#' data=list(x=x,y=y),links)
+#' TMB_template(form, parameter=list(b0=1,b1=2, log_sigma=sd(y)),
+#' data=list(x=x,y=y),link=c(b0="identity", b1="identity", sigma="log"))
+#' ff <- TMB_mkfun(form, parameter=list(b0=1,b1=2, log_sigma=sd(y)),
+#' data=list(x=x,y=y),link=c(b0="identity", b1="identity", sigma="log"))
 
 TMB_template <- function(formula,parameter,data=NULL,link=NULL) {
   if (!is.null(data)) {
@@ -38,30 +40,37 @@ TMB_template <- function(formula,parameter,data=NULL,link=NULL) {
   }
 
   ## store all coefficents with linkfun
-  if (is.null(links){
-    coefs <- character(length(parameter))
-    for(i in seq_along(parameters)){
-      coefs[i] <- sprintf("Type %s = %s; \n", trans_parnames(names(plinkscale)[i]),
-                          sprintf(all_links[[links[[i]]]]), names(parameter)[i])
+  if (!is.null(link)){
+    coefs <- coefs_text <- character(length(link))
+    for(i in seq_along(link)){
+      coefs[i] <- trans_parnames(names(parameter)[i])
+      ## filters out identity link
+      if(!(coefs[i] %in% names(parameter))){
+      coefs_text[i] <- sprintf("Type %s = %s; \n", coefs[i],
+                          sprintf(all_links[[link[[i]]]], names(parameter)[i]))
+      }
     }
-}
+  }
+
+  ## variables without identity link
+  trans_coefs <- setdiff(coefs, names(parameter))
 
   ## cpp script
   header <- "#include <TMB.hpp> \ntemplate<class Type> \nType objective_function<Type>::operator() () { \n"
 
-  links <- paste0("Type ", invlinkfun(pname, link_f), ";\n")
-
   nll <- sprintf("Type nll = 0.0;\nnll = -sum(%s(%s, %s, %s, true));\nreturn nll;\n}",
-                 as.character(RHS[[1]]), as.character(y), toString(RHS[2]), pname)
+                 as.character(RHS[[1]]), as.character(y), toString(RHS[2]),
+                 paste(trans_coefs, collapse = ','))
 
   model <- paste0(header, paste(data_var, collapse=''),
-                  paste(params, collapse=''), links, nll)
+                  paste(params, collapse=''),
+                  paste(coefs_text, collapse=''), nll)
 
   ##return(model)
   write(model, file='template.cpp')
 }
 
-#' compiles template an
+#' compiles template and create nll and gradient
 #' @name TMB_mkfun
 #' @param form A formula in expression form of "y ~ model"
 #' @param parameter A list of initial values for the parameters
@@ -77,17 +86,6 @@ TMB_mkfun <- function(formula,parameter,data=NULL,link=NULL){
   return(obj_fun)
 }
 
-
-## list of link to inverse link functions
-all_links <- c("logit"="invlogit(%s)",
-               "probit"="pnorm(%s)",
-               "cauchit"=NA,
-               "cloglog"=NA,
-               "identity"="%s",
-               "log"="exp(%s)",
-               "sqrt"="%s**2",
-               "1/mu^2"="1/sqrt(%s)",
-               "inverse"="(1/%s)")
 
 ## get pnames from "linkfun_pname"
 trans_parnames <- function(p) {

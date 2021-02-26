@@ -1,33 +1,19 @@
-## Link functions for TMB
+## list of link to inverse link functions
+all_links <- c("logit"="invlogit(%s)",
+               "probit"="pnorm(%s)",
+               "cauchit"=NA,
+               "cloglog"=NA,
+               "identity"="%s",
+               "log"="exp(%s)",
+               "sqrt"="%s**2",
+               "1/mu^2"="1/sqrt(%s)",
+               "inverse"="(1/%s)")
+
 ## make parameter name
 plinkfun <- function(pname, linkname) {
   ifelse(linkname=="identity",pname,
          paste(linkname, pname, sep="_"))
 }
-
-
-## names of all allowed links (except 'identity')
-all_links <- c("log","logit","cloglog","sqrt","inverse","log10")
-trans_parnames <- function(p) {
-    regex <- sprintf("(%s)_", paste(all_links,collapse="|"))
-    gsub(regex,"",p)
-}
-
-
-
-
-## put the rest of the pieces together ...
-## then maybe filter out the identity ones
-##  whatever[linkname!="identity"]
-
-## make parameter name
-invlinkfun <- function(pname, linkname) {
-  switch (linkname,
-    log = sprintf("%s = exp(%s)", pname, plinkfun(pname, linkname)),
-    logit = sprintf("%s = invlogit(%s)", pname, plinkfun(pname, linkname))
-  )
-}
-
 
 ## List of log-lik function for different distributions
 loglik_list <- list(

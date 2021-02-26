@@ -13,6 +13,14 @@
 #' fit0 <- mle(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
 #' ss <- list(ymean=mean(d$y), logsd=log(sd(d$y)))
 #' fit3 <- mle(y~dnorm(mean=ymean, sd=exp(logsd)),start=ss,data=d)
+#'
+#' set.seed(123)
+#' x <- runif(20, 1, 10)
+#' y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
+#' form <- y ~ dnorm(b0 + b1 * x, log_sigma)
+#' fit <- mle(form, start=list(b0=1,b1=2, log_sigma=sd(y)),
+#' data=list(x=x,y=y),links=c(b0="identity", b1="identity", sigma="log"))
+#'
 #' @export
 
 #' @importFrom stats optim optimHess make.link
@@ -21,24 +29,34 @@
 mle <- function(form, start, data, fixed=NULL, control=mle_control(),
                 links=NULL, method=NULL) {
 
-    ## translate parameters to link scale
-    plinkscale <- numeric(length(start))
-    names(plinkscale) <- plinkfun(names(start), links)
-    for (i in seq_along(plinkscale)) {
-      mm <- make.link(links[[i]])
-      plinkscale[[i]] <- mm$linkfun(start[[i]])
-    }
+    ## check bad links
+    if(!is.null(links)) {
+      bad_links <- which(is.na(unname(all_links[links])))
+      if(length(bad_links)>0){
+        stop("undefined link(s): ", paste(links[bad_links], collapse=", "))
+      }
 
+    ## translate parameters to link scale??
+    ## or does user already enter it
+
+  #   plinkscale <- numeric(length(start))
+  #   names(plinkscale) <- plinkfun(names(start), links)
+  #   for (i in seq_along(plinkscale)) {
+  #     mm <- make.link(links[[i]])
+  #     plinkscale[[i]] <- mm$linkfun(start[[i]])
+  #   }
+
+    }
 
     ## calling TMBintegration if chose to
     if (method == 'TMB'){
-      ff <- TMB_mkfun(form, data, parameter=plinkscale, links)
+      ff <- TMB_mkfun(form, data, parameter=start, links)
     } else{
-      ff <- mkfun(form, data, link)
-      argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
+      ff <- mkfun(form, data, links)
     }
 
     ## optim work
+    argList <- list(par=unlist(plinkscale), fn=ff$fn, gr=ff$gr)
     opt <- do.call(stats::optim, c(argList,control$optControl))
 
 
