@@ -15,11 +15,30 @@ plinkfun <- function(pname, linkname) {
          paste(linkname, pname, sep="_"))
 }
 
+## FIXME: document this, find a way for people to add to it e.g.
+## a function add_loglik() that modifies the copy *inside* the package
+## the function should check that a d*() function already exists
+## (and has the first argument named x and has an argument named log)
+#' @examples
+#' check_fun(dbinom)
+#' try(check_fun(djunk))
+#' djunk <- function(y) {}
+#' try(check_fun(djunk))
+#' rm(djunk)
+
+check_fun <- function(f) {
+    if (!exists(deparse(substitute(f)))) stop("function doesn't exist")
+    ff <- formals(f)
+    if (names(ff)[1]!="x") stop("first argument should be 'x'")
+    if (!"log" %in% names(ff)) stop("function should have a 'log' argument")
+    return(TRUE)
+}
+
 ## List of log-lik function for different distributions
 loglik_list <- list(
   dpois = list(expr=expression(x * log(lambda) - lambda - lfactorial(x)),
                params=c("lambda")),
-  dnorm = list(expr=expression(## -log(2*4*(4*atan(1/5)-atan(1/239)))/2 -
+  dnorm = list(expr=expression(
                    - log((2*pi)^0.5)
                    - log(sd)
                    - (x-mean)^2/(2*sd^2)),

@@ -48,13 +48,12 @@ mle <- function(form, start, data, fixed=NULL, control=mle_control(),
 
     }
 
-    ## calling TMBintegration if chose to
-    if (method == 'TMB'){
-      ff <- TMB_mkfun(form, data, parameter=start, links)
-    } else{
-      ff <- mkfun(form, data, links)
-    }
-
+    ## calling TMB integration if chose to
+    ff <- switch(
+        TMB = TMB_mkfun(form, data, parameter=start, links),
+        R =  mkfun(form, data, links),
+        stop(paste("unknown method",sQuote(method)))
+    )
     ## optim work
     argList <- list(par=unlist(plinkscale), fn=ff$fn, gr=ff$gr)
     opt <- do.call(stats::optim, c(argList,control$optControl))
