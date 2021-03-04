@@ -24,6 +24,21 @@ log_a <- X %*% log_a_coeffs
 ##                                  D(log_a)/(log.a.quad)}
 ## {D(dnorm/mean), D(dnorm/sd)}
 
+
+parameter_parse <- function(parameters, data){
+  ## assume only one submodel for now
+  formula <- parameters[[1]]
+  RHS <- formula[-2] ## "~ size"
+
+  ## set up model
+  X <- model.matrix(RHS, data=data)
+
+  ## convert X into a list
+  val_list <- split(X, rep(1:ncol(X), each = nrow(X)))
+  names(val_list) <- colnames(X)
+}
+
+
 library(bbmle)
 library(emdbook)
 mle2(surv ~ dbinom(size=density,
@@ -36,7 +51,7 @@ mle2(surv ~ dbinom(size=density,
 model.matrix(~size, data=ReedfrogPred)
 
 
-## relist() ???
+     ## relist() ???
 orig_list <- list(a=c(1,2,3),b=4)
 vec <- unlist(orig_list)
 relist(vec, orig_list)
@@ -56,4 +71,4 @@ relist(p,...)
 ## the model
 
 
-       
+

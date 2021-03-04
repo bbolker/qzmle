@@ -46,7 +46,7 @@ mle <- function(form, start, data, fixed=NULL, control=mle_control(),
   #     plinkscale[[i]] <- mm$linkfun(start[[i]])
   #   }
 
-    }
+    # }
 
     ## calling TMB integration if chose to
     ff <- switch(

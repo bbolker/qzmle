@@ -86,10 +86,3 @@ TMB_mkfun <- function(formula,parameter,data=NULL,link=NULL){
   return(obj_fun)
 }
 
-
-## get pnames from "linkfun_pname"
-trans_parnames <- function(p) {
-    regex <- sprintf("(%s)_", paste(names(all_links),collapse="|"))
-    gsub(regex,"",p)
-}
-

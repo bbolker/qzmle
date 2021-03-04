@@ -1,4 +1,35 @@
+## List of log-lik function for different distributions
+loglik_list <- list(
+  dbinom = list(expr=expression(log(size)+x*log(prob)+(size-x)*log((1-prob))),
+                params=c("prob")),
+  dpois = list(expr=expression(x * log(lambda) - lambda - lfactorial(x)),
+               params=c("lambda")),
+  dnorm = list(expr=expression(
+    - log((2*pi)^0.5)
+    - log(sd)
+    - (x-mean)^2/(2*sd^2)),
+    params=c("mean","sd"))
+)
+
+#' Allow users to add their own log likelihood functions
+#' @name add_logl
+#' @param funct objective function (must be defined in environment)
+#' @param logl log likelihood function as expression
+#' @param params a vector of parameters for the objective function
+#' @export
+add_logl <- function(funct, logl, params){
+  if(try(check_fun(funct))){
+    funct_name <- as.character(substitute(funct))
+    new_funct <- list(expr=logl, params=params)
+    new_list <- list(new_funct)
+    names(new_list) <- funct_name
+    loglik_list <- c(loglik_list, new_list)
+  }
+}
+
+
 #' Deriving the log-lik and gradients
+#' @name mkfun
 #' @param formula A formula in expression form of "y ~ model"
 #' @param data A list of parameter in the formula with values in vectors
 #' @param link Link function for each parameters
@@ -19,9 +50,14 @@ mkfun <- function(formula, data, links=NULL) {
   ddistn <- as.character(RHS[[1]])
 
   ## Check distribution
-  if (!ddistn %in% names(loglik_list)) {
-      stop("Can't evaluate the likelihood & derivative for ", sQuote(ddistn))
+  ## suggest to add user's own likelihood function
+  if(try(check_fun(ddistn))){
+    if (!ddistn %in% names(loglik_list)) {
+      stop("Can't evaluate the likelihood for ", sQuote(ddistn),
+           paste("\n Use add_logl() to add the log likelihood function"))
+    }
   }
+
 
   ## assign distribution parameters
   mnames <- loglik_list[[ddistn]]$params
