@@ -1,0 +1,86 @@
+Linear model:  eta = b0 + b1*x + b2*x^2 + b3*x^3
+
+d eta/d b0, d eta/ db1, deta/db2, ...
+
+ 1, x, x^2, x^3 -> COLUMNS of model matrix
+
+dd <- data.frame(x=1:10)
+model.matrix(~poly(x,2,raw=TRUE),dd)
+
+library(splines)
+model.matrix(~ns(x,3), dd)
+
+y ~ dnorm(a*x^b) ,  a = c*z^d ->  dnorm((c*z^d)*x^b)
+
+## mixed models
+
+submodels:
+
+y ~ dbinom(killed ~ dbinom(size=initial, prob=a/(1+a*h*initial)))
+(a*initial/(1+a*h*initial)) = EXPECTED killed
+(functional response: nonlinear relationship between prey density and predation rate)
+
+submodel:  a = ~ temp  (lo,hi):  X = [[1,1,1,1,.],[0,0,1,1,0,0,1]]
+a = X %*% beta
+derivs = X
+
+tank variable = GROUPING variable for the random effect (T tanks, N observations)
+
+  b = tank-specific effects = iid vector of N(0,sigma) (T-vector)
+  Z_{ij} = indicator matrix for observation i, tank j  (N x T matrix)
+  Z %*% b  -> (N-vector)
+
+  Z <- model.matrix(~tank-1)
+
+a = X %*% beta + Z %*% b
+   (N x p) (p)  + (N x T) (T)
+   (X | Z) %*% (beta | b)
+
+  regular linear model
+
+MINOR: Z is an indicator matrix -> sparse model matrix
+
+dd2 <- data.frame(tank=factor(rep(1:3, each=2)))
+model.matrix(~tank-1, data=dd2)
+library(Matrix)
+(M <- sparse.model.matrix(~tank-1, data=dd2))
+
+MAJOR: b is a random variable -> shrinkage estimation ->
+
+in TMB:
+
+sigma_T is a new parameter that is the standard deviation
+of the among-tank random effect
+
+X*beta + sigma_T*(Z *b)  (now assume that b is N(0,1))
+
+neg-log-likelihood = NLL + sum(b**2)
+
+tell TMB that b is a 'random' parameter: it will do Laplace approximation if we
+include random="b" in the MakeADFun() statement
+
+we should be calculating int( likelihood(y|beta,b) * likelihood(b|sigma_T) db ),
+Laplace approx is easier!
+
+
+## TMB submodels
+
+suppose I have  y ~ dbinom(prob=f(a,b,c,d), size=N)
+
+parameters = list(a~z1+z2, b~z3*z4)
+
+there are now vectors of parameters corresponding to a and b
+let's say they're called a__params and b__params
+
+"
+a = Xa*a__params;
+b = Xb*b__params;
+" in the TMB file
+
+DATA_MATRIX(Xa);
+DATA_MATRIX(Xb);
+
+and I need to pass Xa and Xb as matrices in the data list
+
+
+
