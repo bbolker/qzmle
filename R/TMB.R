@@ -1,5 +1,6 @@
+#' Make model template to be compiled
 #' @name TMB_template
-#' @param form A formula in expression form of "y ~ model"
+#' @param formula A formula in expression form of "y ~ model"
 #' @param parameter A list of initial values for the parameters
 #' @param data A list of parameter in the formula with values in vectors
 #' @param link link function and the model parameter
@@ -70,13 +71,15 @@ TMB_template <- function(formula,parameter,data=NULL,link=NULL) {
   write(model, file='template.cpp')
 }
 
-#' compiles template and create nll and gradient
+
+#' Compiles template and create nll and gradient
 #' @name TMB_mkfun
-#' @param form A formula in expression form of "y ~ model"
+#' @description compiles template and create nll and gradient
+#' @param formula A formula in expression form of "y ~ model"
 #' @param parameter A list of initial values for the parameters
 #' @param data A list of parameter in the formula with values in vectors
 #' @param link link function and the model parameter
-#' @importFrom TMB compile dynlib
+#' @importFrom TMB compile dynlib MakeADFun
 
 TMB_mkfun <- function(formula,parameter,data=NULL,link=NULL){
   TMB_template(formula,parameter,data,link)

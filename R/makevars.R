@@ -1,5 +1,7 @@
+#' Make Makevars file to suppress irritating warnings
 #' @name make_makevars
-#' make Makevars file to suppress irritating warnings
+#' @examples
+#' make_makevars()
 #' @export
 make_makevars <- function() {
   if (!dir.exists("~/.R")) {

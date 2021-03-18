@@ -9,38 +9,107 @@ all_links <- c("logit"="invlogit(%s)",
                "1/mu^2"="1/sqrt(%s)",
                "inverse"="(1/%s)")
 
-## make parameter name
+
+
+## make param name with link function prefix
 plinkfun <- function(pname, linkname) {
   ifelse(linkname=="identity",pname,
          paste(linkname, pname, sep="_"))
 }
 
-## get pnames from "linkfun_pname"
+
+
+## get param names from "linkfun_pname"
 trans_parnames <- function(p) {
   regex <- sprintf("(%s)_", paste(names(all_links),collapse="|"))
   gsub(regex,"",p)
 }
 
 
-## Checks objective function
-#' @examples
-#' check_fun(dbinom)
-#' try(check_fun(djunk))
-#' djunk <- function(y) {}
-#' try(check_fun(djunk))
-#' rm(djunk)
-
+## Check if objective function exists
+## examples
+## check_fun("dbinom")
+## try(check_fun("djunk"))
+## djunk <- function(y) {}
+## try(check_fun("djunk"))
+## rm(djunk)
 check_fun <- function(f) {
-    if (!exists(deparse(substitute(f)))) stop("function: ",
-                                              paste0(sQuote(f), " doesn't exist"))
-    ff <- formals(f)
+    if (!exists(f)) stop("function: ",
+                          paste0(sQuote(f), " doesn't exist"))
+    ff <- formals(get(f))
     if (names(ff)[1]!="x") stop("first argument should be 'x'")
     if (!"log" %in% names(ff)) stop("function should have a 'log' argument")
     return(TRUE)
+    }
+
+
+## checks whether name starts with either a specific link
+## (or if NULL) starts with "some link"_
+## returns either "response" or "link"
+## @example
+## detect_scale(c(log_a=1)) # "link"
+## detect_scale(c(some_x=1)) # "response"
+## detect_scale(c(log_a=1, some_x=1)) # "link" "response"
+detect_scale <- function(x, link=NULL) {
+  links <- names(x)
+  regex <- sprintf("(%s)_", paste(names(all_links),collapse="|"))
+  ifelse(length(grep(regex, links))>0,
+         return("link"),
+         return("response"))
+
+  ## output a vector of link functions
+  # s <- character(length(links))
+  # for (i in seq_along(links)){
+  #   ifelse(length(grep(regex, links[i]))>0,
+  #          s[i]<- "link",
+  #          s[i]<- "response")
+  # }
+  # return(s)
 }
 
 
-## copied from lme4
+
+## 1. check names, warn if necessary
+## (i.e. warn if (direction=="invlink" && name doesn't start with linkname)
+## OR (direction=="link" && name starts with linkname)
+## 2. transform x (with $invlink or $linkfun)
+## 3. modify names(x) appropriately (add or subtract <linkname>_)
+## examples:
+## invlink <- mklinkfun("log")
+## x <- c(log_a=1)
+## invlink(x)
+
+mklinkfun <- function(linkname, direction=c("linkfun","linkinv")) {
+  direction <- match.arg(direction)
+  m <- make.link(linkname)
+  f <-function(x) {
+    scale <- detect_scale(x)
+
+    if (direction=="linkfun"){
+      if (scale=="link"){
+        warning("applying link functions: ",
+                paste(dQuote(linkname), "to possible link-scaled parameter:",
+                      dQuote(names(x)), sep = " "))}
+      x_name <- paste0(linkname,"_", names(x))
+    }
+
+    if (direction=="linkinv"){
+      if (scale=="response"){
+        warning("applying invlink functions: ",
+                paste(dQuote(linkname), "to possible not link-scaled parameter:",
+                      dQuote(names(x)), sep = " "))}
+      x_name <- trans_parnames(names(x))
+    }
+
+    result <- m[[direction]](x)
+    names(result) <- x_name
+    return(result)
+  }
+  return(f)
+}
+
+
+## named variable val with variable name in a list (copied from lme4)
 named_list <- function (...)
 {
     L <- list(...)
@@ -52,11 +121,14 @@ named_list <- function (...)
     setNames(L, nm)
 }
 
-setNames <- function (object = nm, nm)
+
+## set name to object (copied from stats)
+setNames <- function (object = name, name)
 {
-  names(object) <- nm
+  names(object) <- name
   object
 }
+
 
 ## check if hessian is positive definite
 hessian_check <- function(x, tol=1e-08) {

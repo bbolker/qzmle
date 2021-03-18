@@ -5,9 +5,8 @@
 \title{return default values and/or user-set values for details of fitting}
 \usage{
 mle_control(
-  optControl = list(method = "BFGS", hessian = FALSE),
-  hessian_method = c("simple", "Richardson", "none"),
-  ...
+  optControl = list(method = "BFGS", control = list()),
+  hessian_method = c("simple", "Richardson", "none")
 )
 }
 \arguments{

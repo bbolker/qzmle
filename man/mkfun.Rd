@@ -4,12 +4,14 @@
 \alias{mkfun}
 \title{Deriving the log-lik and gradients}
 \usage{
-mkfun(formula, data)
+mkfun(formula, data, links = NULL)
 }
 \arguments{
 \item{formula}{A formula in expression form of "y ~ model"}
 
 \item{data}{A list of parameter in the formula with values in vectors}
+
+\item{links}{Link function for each parameters}
 }
 \description{
 Deriving the log-lik and gradients
@@ -18,4 +20,5 @@ Deriving the log-lik and gradients
 set.seed(101)
 dd <- data.frame(y=rpois(100,lambda=1))
 fun1 <- mkfun(y~dpois(exp(lambda)), data=dd)
+fun2 <- mkfun(y~dnorm(mean = b0 + b1 * latitude^2, sd = 1), data=dd)
 }

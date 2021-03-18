@@ -32,7 +32,7 @@ add_logl <- function(funct, logl, params){
 #' @name mkfun
 #' @param formula A formula in expression form of "y ~ model"
 #' @param data A list of parameter in the formula with values in vectors
-#' @param link Link function for each parameters
+#' @param links Link function for each parameters
 #' @examples
 #' set.seed(101)
 #' dd <- data.frame(y=rpois(100,lambda=1))

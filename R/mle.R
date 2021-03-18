@@ -6,7 +6,7 @@
 #' @param data A list of parameter in the formula with values in vectors
 #' @param fixed A list of parameter in the formula to keep fixed during optimization
 #' @param control A list of parameter to pass to optimizer (See `mle_control`)
-#' @param link link function for parameters (identity link as default)
+#' @param links link function for parameters (identity link as default)
 #' @param method base R or TMB integration
 #' @examples
 #' d <- data.frame(x=0:10,y=c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
@@ -27,7 +27,7 @@
 #' @importFrom numDeriv jacobian hessian
 #' @importFrom MASS ginv
 mle <- function(form, start, data, fixed=NULL, control=mle_control(),
-                links=NULL, method=NULL) {
+                links=NULL, method=c("R", "TMB")) {
 
     ## check bad links
     if(!is.null(links)) {
@@ -36,9 +36,6 @@ mle <- function(form, start, data, fixed=NULL, control=mle_control(),
         stop("undefined link(s): ", paste(links[bad_links], collapse=", "))
       }
 
-    ## translate parameters to link scale??
-    ## or does user already enter it
-
   #   plinkscale <- numeric(length(start))
   #   names(plinkscale) <- plinkfun(names(start), links)
   #   for (i in seq_along(plinkscale)) {
@@ -46,16 +43,17 @@ mle <- function(form, start, data, fixed=NULL, control=mle_control(),
   #     plinkscale[[i]] <- mm$linkfun(start[[i]])
   #   }
 
-    # }
+     }
 
     ## calling TMB integration if chose to
-    ff <- switch(
+    method = match.arg(method)
+    ff <- switch(method,
         TMB = TMB_mkfun(form, data, parameter=start, links),
         R =  mkfun(form, data, links),
         stop(paste("unknown method",sQuote(method)))
     )
     ## optim work
-    argList <- list(par=unlist(plinkscale), fn=ff$fn, gr=ff$gr)
+    argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
     opt <- do.call(stats::optim, c(argList,control$optControl))
 
 
@@ -189,11 +187,7 @@ vcov.qzmle <- function(object, ...) {
 ## }
 
 
-
-
-
 check_dots <- function(...) {
-    if (length(list(...))>0) {
-        stop("unused parameters passed to method")
-    }
-}
+  if (length(list(...))>0) {
+    stop("unused parameters passed to method")}
+  }

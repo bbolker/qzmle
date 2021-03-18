@@ -4,18 +4,30 @@
 \alias{mle}
 \title{Deriving MLE}
 \usage{
-mle(form, start, data, fixed = NULL, control = mle_control())
+mle(
+  form,
+  start,
+  data,
+  fixed = NULL,
+  control = mle_control(),
+  links = NULL,
+  method = c("R", "TMB")
+)
 }
 \arguments{
 \item{form}{A formula in expression form of "y ~ model"}
 
-\item{start}{A list of initial values for p}
+\item{start}{A list of initial values for parameters}
 
 \item{data}{A list of parameter in the formula with values in vectors}
 
 \item{fixed}{A list of parameter in the formula to keep fixed during optimization}
 
-\item{control}{control arguments to pass to optimizer}
+\item{control}{A list of parameter to pass to optimizer (See \code{mle_control})}
+
+\item{links}{link function for parameters (identity link as default)}
+
+\item{method}{base R or TMB integration}
 }
 \description{
 Deriving MLE
@@ -25,4 +37,12 @@ d <- data.frame(x=0:10,y=c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
 fit0 <- mle(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
 ss <- list(ymean=mean(d$y), logsd=log(sd(d$y)))
 fit3 <- mle(y~dnorm(mean=ymean, sd=exp(logsd)),start=ss,data=d)
+
+set.seed(123)
+x <- runif(20, 1, 10)
+y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
+form <- y ~ dnorm(b0 + b1 * x, log_sigma)
+fit <- mle(form, start=list(b0=1,b1=2, log_sigma=sd(y)),
+data=list(x=x,y=y),links=c(b0="identity", b1="identity", sigma="log"))
+
 }
