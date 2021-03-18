@@ -56,34 +56,39 @@ mkfun <- function(formula,
                   links=NULL,
                   parameters=NULL,
                   data) {
+    
   if(missing(data)) {
-    stop("missing data...") # if no data
+      stop("missing data...") # if no data
   }
-  RHS <- formula[[3]]
+  
+  stopifnot(length(formula)==3)  ## should be a two-sided formula
   response <- formula[[2]]
-  ddistn <- as.character(RHS[[1]])
+  ddistn <- as.character(RHS(formula)[[1]])
 
   ## Check distribution
   ## suggest to add user's own likelihood function
-  if(try(check_fun(ddistn))){
+  cf <- try(check_fun(ddistn), silent=TRUE)
+  if (inherits(cf, "try-error")) {
     if (!ddistn %in% names(loglik_list)) {
-      stop("Can't evaluate the likelihood for ", sQuote(ddistn),
-           paste("\n Use add_logl() to add the log likelihood function"))
+        stop("Can't evaluate the likelihood for ", sQuote(ddistn),
+             paste("\n Use add_logl() to add the log likelihood function"))
     }
   }
 
   ## submodels
-  if(!missing(parameters)){
+  if(!missing(parameters)) {
+      browser()
     ##FIXME: assumed only one submodel for now
-    submodel_vars <- as.character(sapply(parameters,"[[",2))
-    dvars <- parameter_parse(parameters, data)
-  } else{
+    submodel_vars <- vapply(parameters,LHS_to_char,FUN.VALUE=character(1))
+      Xlist <- lapply(parameters,parameter_parse, data=data)
+      names(Xlist) <- submodel_vars
+  } else {
       submodel_vars = NULL
-    }
+  }
 
   ## assign distribution parameters
   mnames <- loglik_list[[ddistn]]$params
-  arglist <- as.list(RHS[-1]) ## $lambda = (b0 * latitude^2), sd///delete function name
+  arglist <- as.list(RHS(formula)[-1]) ## $lambda = (b0 * latitude^2), sd///delete function name
 
   ## in case user puts other parnames ie. mu instead of mean
   ## names(arglist) <- mnames
@@ -95,14 +100,18 @@ mkfun <- function(formula,
   )
 
   ## do we want likelihood respect to orig or link
-  fn <- function(pars) { ## parameter
-    pars_and_data <- c(as.list(pars), data) ## list of b0,b1,y,lattitude
+   fn <- function(pars) { ## parameter
+        
+    ## BMB: these parameters need to be the 'unpacked' (full vector) of parameters
+       pars_and_data <- c(as.list(pars), data) ## list of b0,b1,y,lattitude
+       ## in here we need the loop where we do Xlist[[par]] %*% parlist[[par]]
     r <- with(
       pars_and_data,
       -sum(do.call(ddistn, arglist1))
     )
     return(r)
   }
+
 
   gr <- function(pars) {
     pars_and_data <- c(as.list(pars), data)
@@ -172,17 +181,15 @@ mkfun <- function(formula,
 }
 
 ## setting up submodels
-parameter_parse <- function(parameters, data){
-  ## assume only one submodel for now
-  formula <- parameters[[1]]
-  var <- formula[[2]]
-  RHS <- formula[-2] ## "~ size"
-
+parameter_parse <- function(formula, data){
   ## set up model
-  X <- model.matrix(RHS, data=data)
-
+  X <- model.matrix(onesided_formula(formula), data=data)
+    return(X)
+    
   ## convert X into a list
-  val_list <- split(X, rep(1:ncol(X), each = nrow(X)))
-  names(val_list) <- paste(var, colnames(X), sep=".")
-  return(val_list)
+  ## val_list <- split(X, rep(1:ncol(X), each = nrow(X)))
+  ## names(val_list) <- paste(var, colnames(X), sep=".")
+  ##   return(val_list)
+
+    ## should return X instead 
 }
