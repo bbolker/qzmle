@@ -5,6 +5,7 @@
 #' @param start A list of initial values for parameters
 #' @param data A list of parameter in the formula with values in vectors
 #' @param fixed A list of parameter in the formula to keep fixed during optimization
+#' @param parameters A list of linear submodels
 #' @param control A list of parameter to pass to optimizer (See `mle_control`)
 #' @param links link function for parameters (identity link as default)
 #' @param method base R or TMB integration
@@ -23,33 +24,27 @@
 #'
 #' @export
 
+## mle(surv ~ dbinom(size=density,prob=1/(1+exp(log_a)*h*density)),
+     ##     parameters=list(log_a~size),
+     ##     start=list(log_a=0,h=1),
+     ##     data=ReedfrogPred)
+
+
 #' @importFrom stats optim optimHess make.link
 #' @importFrom numDeriv jacobian hessian
 #' @importFrom MASS ginv
-mle <- function(form, start, data, fixed=NULL, control=mle_control(),
-                links=NULL, method=c("R", "TMB")) {
-
-    ## check bad links
-    if(!is.null(links)) {
-      bad_links <- which(is.na(unname(all_links[links])))
-      if(length(bad_links)>0){
-        stop("undefined link(s): ", paste(links[bad_links], collapse=", "))
-      }
-
-  #   plinkscale <- numeric(length(start))
-  #   names(plinkscale) <- plinkfun(names(start), links)
-  #   for (i in seq_along(plinkscale)) {
-  #     mm <- make.link(links[[i]])
-  #     plinkscale[[i]] <- mm$linkfun(start[[i]])
-  #   }
-
-     }
+mle <- function(form, start, data,
+                fixed=NULL,
+                parameters=NULL,
+                links=NULL,
+                control=mle_control(),
+                method=c("R", "TMB")) {
 
     ## calling TMB integration if chose to
     method = match.arg(method)
     ff <- switch(method,
-        TMB = TMB_mkfun(form, data, parameter=start, links),
-        R =  mkfun(form, data, links),
+        TMB = TMB_mkfun(form, data, start, links),
+        R =  mkfun(form, data, parameters, links),
         stop(paste("unknown method",sQuote(method)))
     )
     ## optim work
@@ -190,4 +185,5 @@ vcov.qzmle <- function(object, ...) {
 check_dots <- function(...) {
   if (length(list(...))>0) {
     stop("unused parameters passed to method")}
-  }
+}
+

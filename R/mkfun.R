@@ -27,21 +27,35 @@ add_logl <- function(funct, logl, params){
   }
 }
 
-
 #' Deriving the log-lik and gradients
 #' @name mkfun
 #' @param formula A formula in expression form of "y ~ model"
 #' @param data A list of parameter in the formula with values in vectors
 #' @param links Link function for each parameters
+#' @param parameters A list of linear submodels
 #' @examples
 #' set.seed(101)
 #' dd <- data.frame(y=rpois(100,lambda=1))
 #' fun1 <- mkfun(y~dpois(exp(lambda)), data=dd)
 #' fun2 <- mkfun(y~dnorm(mean = b0 + b1 * latitude^2, sd = 1), data=dd)
+#' form <- surv ~ dbinom(size = density, prob = 1/(1 + exp(log_a)*h*density))
+#' fun3 <- mkfun(form,parameters=list(log_a~poly(size)),data=emdbook::ReedfrogPred)
 #' @export
 
+## trying to replicate:
+## library(emdbook)
+## bbmle::mle2(surv ~ dbinom(size=density,prob=1/(1+exp(log_a)*h*density)),
+##     parameters=list(log_a~size),
+##     start=list(log_a=0,h=1),
+##     data=ReedfrogPred)
+
+
+
 #' @importFrom Deriv Deriv
-mkfun <- function(formula, data, links=NULL) {
+mkfun <- function(formula,
+                  links=NULL,
+                  parameters=NULL,
+                  data) {
   if(missing(data)) {
     stop("missing data...") # if no data
   }
@@ -58,11 +72,21 @@ mkfun <- function(formula, data, links=NULL) {
     }
   }
 
+  ## submodels
+  if(!missing(parameters)){
+    ##FIXME: assumed only one submodel for now
+    submodel_vars <- as.character(sapply(parameters,"[[",2))
+    dvars <- parameter_parse(parameters, data)
+  } else{
+      submodel_vars = NULL
+    }
 
   ## assign distribution parameters
   mnames <- loglik_list[[ddistn]]$params
   arglist <- as.list(RHS[-1]) ## $lambda = (b0 * latitude^2), sd///delete function name
-  names(arglist) <- mnames
+
+  ## in case user puts other parnames ie. mu instead of mean
+  ## names(arglist) <- mnames
 
   arglist1 <- c(
     list(x = response), ##assign x to y)
@@ -90,10 +114,10 @@ mkfun <- function(formula, data, links=NULL) {
     arglist_eval <- lapply(arglist, eval, pars_and_data) ##mean, sd
     arglist_eval$x <- eval(response, pars_and_data) ##evaluate response variable and assign its value to 'x'
     d1 <- eval(d0, arglist_eval) ## sub d0 - compute the deriv of log_lik wrt to its parameters
+    ## d1 = D(dbinom/prob)
 
+    ## parameters of model parameter
     parnames <- setdiff(all.vars(RHS), names(data))
-
-
 
     glist <- list()
     ## a matrix with appropriately named columns corresponding to parameters
@@ -112,16 +136,26 @@ mkfun <- function(formula, data, links=NULL) {
             for (p in parnames){
               if(p %in% all.vars(arglist[[m]])) {
                 ## links
-                tlink <- links[[p]]
-                mm <- make.link(tlink)
+                # tlink <- links[[p]]
+                # mm <- make.link(tlink)
 
                 dlist <- list()
-                ## d(mean)/d(b0)
+                ## d(mean)/d(b0); d(prob)/d(log_a)
                 dlist[[m]][[p]] <- eval(Deriv::Deriv(arglist[[m]], p), pars_and_data)
 
-                # deriv rule on links - d(b0)/d(log_b0)
-                dlist[[m]][[p]] <- 1/mm$mu.eta(mm$linkinv(dlist[[m]][[p]]))
-                glist[[m]][[p]] <- -sum(d2*dlist[[m]][[p]])
+                ## check if parameter has submodel
+                if(p %in% submodel_vars){
+                  vars <- names(dvars)
+                  for (i in seq_along(vars)){
+                    ## d(log_a)/d(log_a.intercept)
+                    d3 <- dvars[[i]]*(i-1)
+                    glist[[m]][[vars[i]]] <- -sum(d3*d2*dlist[[m]][[p]])
+                  }
+                } else{
+                  # deriv rule on links - d(b0)/d(log_b0)
+                  ##dlist[[m]][[p]] <- 1/mm$mu.eta(mm$linkinv(dlist[[m]][[p]]))
+                  glist[[m]][[p]] <- -sum(d2*dlist[[m]][[p]])
+                }
               }
             } ## p in parnames
         } ## arg is not constant
@@ -137,3 +171,18 @@ mkfun <- function(formula, data, links=NULL) {
   return(list(fn = fn, gr = gr))
 }
 
+## setting up submodels
+parameter_parse <- function(parameters, data){
+  ## assume only one submodel for now
+  formula <- parameters[[1]]
+  var <- formula[[2]]
+  RHS <- formula[-2] ## "~ size"
+
+  ## set up model
+  X <- model.matrix(RHS, data=data)
+
+  ## convert X into a list
+  val_list <- split(X, rep(1:ncol(X), each = nrow(X)))
+  names(val_list) <- paste(var, colnames(X), sep=".")
+  return(val_list)
+}
