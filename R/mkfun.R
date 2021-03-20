@@ -33,6 +33,7 @@ add_logl <- function(funct, logl, params){
 #' @param data A list of parameter in the formula with values in vectors
 #' @param links Link function for each parameters
 #' @param parameters A list of linear submodels
+#' @param start A list of start values for formula parameters
 #' @examples
 #' set.seed(101)
 #' dd <- data.frame(y=rpois(100,lambda=1))
@@ -56,12 +57,16 @@ mkfun <- function(formula,
                   links=NULL,
                   parameters=NULL,
                   data) {
-    
+
   if(missing(data)) {
       stop("missing data...") # if no data
   }
-  
-  stopifnot(length(formula)==3)  ## should be a two-sided formula
+
+  if(length(formula)==3) {
+    stop("should be a two-sided formula")
+  }
+
+
   response <- formula[[2]]
   ddistn <- as.character(RHS(formula)[[1]])
 
@@ -77,43 +82,61 @@ mkfun <- function(formula,
 
   ## submodels
   if(!missing(parameters)) {
-      browser()
-    ##FIXME: assumed only one submodel for now
+    ## setting up submodels
+    parameter_parse <- function(formula, data){
+    X <- model.matrix(onesided_formula(formula), data=data)
+      return(X)
+    }
     submodel_vars <- vapply(parameters,LHS_to_char,FUN.VALUE=character(1))
-      Xlist <- lapply(parameters,parameter_parse, data=data)
-      names(Xlist) <- submodel_vars
+    Xlist <- lapply(parameters,parameter_parse, data=data)
+    names(Xlist) <- submodel_vars
+    ## make sure start values of parameters in the same order as the Xlist
+    pvec <- start[submodel_vars]
   } else {
-      submodel_vars = NULL
+    submodel_vars <- NULL
+    pvec <- start
+  }
+
+  ## if missing arguments, use the named argument as the first element,
+  ## all other elements of the sub-model parameter vector are 0
+  for(i in submodel_vars){
+    n_missed <- ncol(Xlist[[i]]) - length(pvec[[i]])
+    if (n_missed < 0) stop('Too many argments in start for parameter: ', sQuote(i))
+    if (n_missed != 0) pvec[[i]] <- c(pvec[[i]], rep(0, n_missed))
   }
 
   ## assign distribution parameters
   mnames <- loglik_list[[ddistn]]$params
   arglist <- as.list(RHS(formula)[-1]) ## $lambda = (b0 * latitude^2), sd///delete function name
 
-  ## in case user puts other parnames ie. mu instead of mean
+  ## FIXME: might break something
   ## names(arglist) <- mnames
+  arglist1 <- c(list(x = response),arglist,list(log = TRUE))
 
-  arglist1 <- c(
-    list(x = response), ##assign x to y)
-    arglist,
-    list(log = TRUE)
-  )
+  fn <- function(pars) {
+    pars <- relist(pars, pvec)
 
-  ## do we want likelihood respect to orig or link
-   fn <- function(pars) { ## parameter
-        
-    ## BMB: these parameters need to be the 'unpacked' (full vector) of parameters
-       pars_and_data <- c(as.list(pars), data) ## list of b0,b1,y,lattitude
-       ## in here we need the loop where we do Xlist[[par]] %*% parlist[[par]]
-    r <- with(
-      pars_and_data,
-      -sum(do.call(ddistn, arglist1))
-    )
+    if(!missing(parameters)){
+      for (par in seq_along(pars)){
+        pars[[par]] <- c(Xlist[[par]] %*% pars[[par]])
+      }
+    }
+
+    pars_and_data <- c(as.list(pars), data)
+    r <- with(pars_and_data,-sum(do.call(ddistn, arglist1)))
     return(r)
   }
 
 
   gr <- function(pars) {
+    pars <- relist(pars, pvec)
+
+    if(!missing(parameters)){
+      for (par in seq_along(pars)){
+        pars[[par]] <- c(Xlist[[par]] %*% pars[[par]])
+      }
+    }
+
     pars_and_data <- c(as.list(pars), data)
 
     ## eventually we need to calculate partial derivatives of the log-likelihood
@@ -126,7 +149,7 @@ mkfun <- function(formula,
     ## d1 = D(dbinom/prob)
 
     ## parameters of model parameter
-    parnames <- setdiff(all.vars(RHS), names(data))
+    parnames <- setdiff(all.vars(RHS(formula)), names(data))
 
     glist <- list()
     ## a matrix with appropriately named columns corresponding to parameters
@@ -154,11 +177,15 @@ mkfun <- function(formula,
 
                 ## check if parameter has submodel
                 if(p %in% submodel_vars){
-                  vars <- names(dvars)
-                  for (i in seq_along(vars)){
+                  ## change into Xlist[[param]] into a list
+                  dvars <- split(Xlist[[p]], rep(1:ncol(Xlist[[p]]),
+                                 each=nrow(Xlist[[p]])))
+                  names(dvars) <- paste(p, colnames(Xlist[[p]]), sep='.')
+
+                  for (i in names(dvars)){
                     ## d(log_a)/d(log_a.intercept)
-                    d3 <- dvars[[i]]*(i-1)
-                    glist[[m]][[vars[i]]] <- -sum(d3*d2*dlist[[m]][[p]])
+                    d3 <- dvars[[i]]
+                    glist[[m]][[i]] <- -sum(d3*d2*dlist[[m]][[p]])
                   }
                 } else{
                   # deriv rule on links - d(b0)/d(log_b0)
@@ -177,19 +204,7 @@ mkfun <- function(formula,
 
     ## d(loglik_pois/d(lambda))* d(lambda)/d(b0)
   }
-  return(list(fn = fn, gr = gr))
+  return(list(start = pvec, fn = fn, gr = gr))
 }
 
-## setting up submodels
-parameter_parse <- function(formula, data){
-  ## set up model
-  X <- model.matrix(onesided_formula(formula), data=data)
-    return(X)
-    
-  ## convert X into a list
-  ## val_list <- split(X, rep(1:ncol(X), each = nrow(X)))
-  ## names(val_list) <- paste(var, colnames(X), sep=".")
-  ##   return(val_list)
 
-    ## should return X instead 
-}

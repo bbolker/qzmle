@@ -44,11 +44,12 @@ mle <- function(form, start, data,
     method = match.arg(method)
     ff <- switch(method,
         TMB = TMB_mkfun(form, data, start, links),
-        R =  mkfun(form, data, parameters, links),
+        R =  mkfun(form, data, start, parameters, links),
         stop(paste("unknown method",sQuote(method)))
     )
+
     ## optim work
-    argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
+    argList <- list(par=unlist(ff$start), fn=ff$fn, gr=ff$gr)
     opt <- do.call(stats::optim, c(argList,control$optControl))
 
 

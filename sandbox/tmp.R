@@ -1,7 +1,7 @@
 f <- function(a,b,c=2,d=3) {
     cat(a,b,c,d,"\n")
 }
-    
+
 f(1,2,3,4)
 f(0,0)
 f(c=3,2,1)
@@ -35,14 +35,16 @@ m1 <- bbmle::mle2(form,parameters=list(log_a~poly(nsize,1)),
 ## the other trick is that we are automatically expanding the start value for a sub-model
 ## by taking the named argument as the first element, all other elements of the sub-model
 ## parameter vector are 0
+
+parameters=list(log_a~poly(nsize))
 m1@minuslogl(0,0,1)  ## log_a=0 -> (0,0)
 m1@minuslogl(1,0,1)  ## log_a=1 -> (1,0)
 formals(m1@minuslogl)
 
 m1@minuslogl(1,2,1)
 
-orig_pars <- list(log_a=c(NA,NA), h=NA)
-pvec <- c(1,0,2)
+orig_pars <- list(log_a=c(0,0), h=0)
+pvec <- c(1,2)
 relist(pvec,orig_pars)
 ##
 ## before defining $fn and $gr:
@@ -62,9 +64,9 @@ relist(pvec,orig_pars)
 ##      c. evaluate the original expression with these values
 ##
 ##     for $gr:
-##       
+##
 ##  for each submodel
-##  find the 
+##  find the
 
 ## environment example
 ## 1. working with global environment
