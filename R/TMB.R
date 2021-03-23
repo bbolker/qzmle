@@ -1,7 +1,7 @@
 #' Make model template to be compiled
 #' @name TMB_template
 #' @param formula A formula in expression form of "y ~ model"
-#' @param parameter A list of initial values for the parameters
+#' @param start A list of initial values for the parameters
 #' @param data A list of parameter in the formula with values in vectors
 #' @param link link function and the model parameter
 #' @examples
@@ -10,12 +10,12 @@
 #' y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
 #' form <- y ~ dnorm(b0 + b1 * x, log_sigma)
 #' links <- list(sigma="log")
-#' TMB_template(form, parameter=list(b0=1,b1=2, log_sigma=sd(y)),
+#' TMB_template(form, start=list(b0=1,b1=2, log_sigma=sd(y)),
 #' data=list(x=x,y=y),link=c(b0="identity", b1="identity", sigma="log"))
-#' ff <- TMB_mkfun(form, parameter=list(b0=1,b1=2, log_sigma=sd(y)),
+#' ff <- TMB_mkfun(form, start=list(b0=1,b1=2, log_sigma=sd(y)),
 #' data=list(x=x,y=y),link=c(b0="identity", b1="identity", sigma="log"))
 
-TMB_template <- function(formula,parameter,data=NULL,link=NULL) {
+TMB_template <- function(formula,start,data=NULL,link=NULL) {
   if (!is.null(data)) {
     data_var <- character(length(data))
 
@@ -35,26 +35,26 @@ TMB_template <- function(formula,parameter,data=NULL,link=NULL) {
   ddistn <- as.character(RHS[[1]])
 
   ## store all parameters
-  params <- character(length(parameter))
-  for (i in seq_along(parameter)) {
-    params[i] <- sprintf("PARAMETER(%s); \n", names(parameter)[i])
+  params <- character(length(start))
+  for (i in seq_along(start)) {
+    params[i] <- sprintf("PARAMETER(%s); \n", names(start)[i])
   }
 
   ## store all coefficents with linkfun
   if (!is.null(link)){
     coefs <- coefs_text <- character(length(link))
     for(i in seq_along(link)){
-      coefs[i] <- trans_parnames(names(parameter)[i])
+      coefs[i] <- trans_parnames(names(start)[i])
       ## filters out identity link
-      if(!(coefs[i] %in% names(parameter))){
+      if(!(coefs[i] %in% names(start))){
       coefs_text[i] <- sprintf("Type %s = %s; \n", coefs[i],
-                          sprintf(all_links[[link[[i]]]], names(parameter)[i]))
+                          sprintf(all_links[[link[[i]]]], names(start)[i]))
       }
     }
   }
 
   ## variables without identity link
-  trans_coefs <- setdiff(coefs, names(parameter))
+  trans_coefs <- setdiff(coefs, names(start))
 
   ## cpp script
   header <- "#include <TMB.hpp> \ntemplate<class Type> \nType objective_function<Type>::operator() () { \n"
@@ -76,16 +76,16 @@ TMB_template <- function(formula,parameter,data=NULL,link=NULL) {
 #' @name TMB_mkfun
 #' @description compiles template and create nll and gradient
 #' @param formula A formula in expression form of "y ~ model"
-#' @param parameter A list of initial values for the parameters
+#' @param start A list of initial values for the parameters
 #' @param data A list of parameter in the formula with values in vectors
 #' @param link link function and the model parameter
 #' @importFrom TMB compile dynlib MakeADFun
 
-TMB_mkfun <- function(formula,parameter,data=NULL,link=NULL){
-  TMB_template(formula,parameter,data,link)
+TMB_mkfun <- function(formula,start,data=NULL,link=NULL){
+  TMB_template(formula,start,data,link)
   TMB::compile("template.cpp")
   dyn.load(TMB::dynlib("template"))
-  obj_fun <- MakeADFun(data=data, parameters=parameter, DLL="template")
+  obj_fun <- MakeADFun(data=data, parameters=start, DLL="template")
   return(obj_fun)
 }
 

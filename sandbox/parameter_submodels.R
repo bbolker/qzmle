@@ -36,13 +36,13 @@ parameter_parse <- function(parameters, data){
   ## convert X into a list
   val_list <- split(X, rep(1:ncol(X), each = nrow(X)))
   names(val_list) <- colnames(X)
+  return(val_list)
 }
 
 
 library(bbmle)
 library(emdbook)
-mle2(surv ~ dbinom(size=density,
-                  prob=1/(1+exp(log_a)*h*density)),
+mle2(surv ~ dbinom(size=density,prob=1/(1+exp(log_a)*h*density)),
     parameters=list(log_a~size),
     start=list(log_a=0,h=1),
     data=ReedfrogPred)

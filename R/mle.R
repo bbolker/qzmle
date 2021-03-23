@@ -5,6 +5,7 @@
 #' @param start A list of initial values for parameters
 #' @param data A list of parameter in the formula with values in vectors
 #' @param fixed A list of parameter in the formula to keep fixed during optimization
+#' @param parameters A list of linear submodels
 #' @param control A list of parameter to pass to optimizer (See `mle_control`)
 #' @param links link function for parameters (identity link as default)
 #' @param method base R or TMB integration
@@ -20,40 +21,35 @@
 #' form <- y ~ dnorm(b0 + b1 * x, log_sigma)
 #' fit <- mle(form, start=list(b0=1,b1=2, log_sigma=sd(y)),
 #' data=list(x=x,y=y),links=c(b0="identity", b1="identity", sigma="log"))
-#'
+#' ## linear submodels
+#' rfp <- transform(emdbook::ReedfrogPred, nsize=as.numeric(size), random=rnorm(48))
+#' form <- surv ~ dbinom(size = density, prob = exp(log_a)/(1 + exp(log_a)*h*density))
+#' fit4 <- mle(form,start=list(h=4,log_a=2), parameters=list(log_a~poly(random)),data=rfp)
 #' @export
+
+#' ## fit4 check
+## bbmle::mle2(form,parameters=list(log_a~poly(random)),start=list(log_a=c(2,0), h=4),data=rfp)
 
 #' @importFrom stats optim optimHess make.link
 #' @importFrom numDeriv jacobian hessian
 #' @importFrom MASS ginv
-mle <- function(form, start, data, fixed=NULL, control=mle_control(),
-                links=NULL, method=c("R", "TMB")) {
-
-    ## check bad links
-    if(!is.null(links)) {
-      bad_links <- which(is.na(unname(all_links[links])))
-      if(length(bad_links)>0){
-        stop("undefined link(s): ", paste(links[bad_links], collapse=", "))
-      }
-
-  #   plinkscale <- numeric(length(start))
-  #   names(plinkscale) <- plinkfun(names(start), links)
-  #   for (i in seq_along(plinkscale)) {
-  #     mm <- make.link(links[[i]])
-  #     plinkscale[[i]] <- mm$linkfun(start[[i]])
-  #   }
-
-     }
+mle <- function(form, start, data,
+                fixed=NULL,
+                parameters=NULL,
+                links=NULL,
+                control=mle_control(),
+                method=c("R", "TMB")) {
 
     ## calling TMB integration if chose to
     method = match.arg(method)
     ff <- switch(method,
-        TMB = TMB_mkfun(form, data, parameter=start, links),
-        R =  mkfun(form, data, links),
+        TMB = TMB_mkfun(form, data, start, links),
+        R =  mkfun(form, start, links,  parameters, data),
         stop(paste("unknown method",sQuote(method)))
     )
+
     ## optim work
-    argList <- list(par=unlist(start), fn=ff$fn, gr=ff$gr)
+    argList <- list(par=unlist(ff$start), fn=ff$fn, gr=ff$gr)
     opt <- do.call(stats::optim, c(argList,control$optControl))
 
 
@@ -190,4 +186,5 @@ vcov.qzmle <- function(object, ...) {
 check_dots <- function(...) {
   if (length(list(...))>0) {
     stop("unused parameters passed to method")}
-  }
+}
+

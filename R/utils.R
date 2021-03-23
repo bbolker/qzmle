@@ -144,3 +144,15 @@ hessian_check <- function(x, tol=1e-08) {
     }
     return(TRUE)
 }
+
+## formula utilities
+LHS_to_char <- function(f) as.character(f[[2]])
+RHS <- function(f) {
+    stopifnot(identical(f[[1]],quote(`~`))) ## should be a formula
+    return(f[[length(f)]])
+}
+onesided_formula <- function(f) {
+    stopifnot(identical(f[[1]],quote(`~`))) ## should be a formula
+    if (length(f)==2) return(f) ## already one-sided
+    return(f[-2])
+}
