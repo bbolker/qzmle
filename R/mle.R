@@ -21,14 +21,14 @@
 #' form <- y ~ dnorm(b0 + b1 * x, log_sigma)
 #' fit <- mle(form, start=list(b0=1,b1=2, log_sigma=sd(y)),
 #' data=list(x=x,y=y),links=c(b0="identity", b1="identity", sigma="log"))
-#'
+#' ## linear submodels
+#' rfp <- transform(emdbook::ReedfrogPred, nsize=as.numeric(size), random=rnorm(48))
+#' form <- surv ~ dbinom(size = density, prob = exp(log_a)/(1 + exp(log_a)*h*density))
+#' fit4 <- mle(form,start=list(h=4,log_a=2), parameters=list(log_a~poly(random)),data=rfp)
 #' @export
 
-## mle(surv ~ dbinom(size=density,prob=1/(1+exp(log_a)*h*density)),
-     ##     parameters=list(log_a~size),
-     ##     start=list(log_a=0,h=1),
-     ##     data=ReedfrogPred)
-
+#' ## fit4 check
+## bbmle::mle2(form,parameters=list(log_a~poly(random)),start=list(log_a=c(2,0), h=4),data=rfp)
 
 #' @importFrom stats optim optimHess make.link
 #' @importFrom numDeriv jacobian hessian
@@ -44,7 +44,7 @@ mle <- function(form, start, data,
     method = match.arg(method)
     ff <- switch(method,
         TMB = TMB_mkfun(form, data, start, links),
-        R =  mkfun(form, data, start, parameters, links),
+        R =  mkfun(form, start, links,  parameters, data),
         stop(paste("unknown method",sQuote(method)))
     )
 

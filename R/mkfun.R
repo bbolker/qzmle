@@ -39,19 +39,11 @@ add_logl <- function(funct, logl, params){
 #' dd <- data.frame(y=rpois(100,lambda=1))
 #' fun1 <- mkfun(y~dpois(exp(lambda)), data=dd)
 #' fun2 <- mkfun(y~dnorm(mean = b0 + b1 * latitude^2, sd = 1), data=dd)
-#' rfp <- transform(emdbook::ReedfrogPred, nsize=as.numeric(size))
+#' rfp <- transform(emdbook::ReedfrogPred, nsize=as.numeric(size), random=rnorm(48))
 #' form <- surv ~ dbinom(size = density, prob = exp(log_a)/(1 + exp(log_a)*h*density))
 #' fun3 <- mkfun(form,start=list(h=1,log_a=0), parameters=list(log_a~poly(nsize)),data=rfp)
+#' fun4 <- mkfun(form,start=list(h=4,log_a=2), parameters=list(log_a~poly(random)),data=rfp)
 #' @export
-
-## trying to replicate:
-## library(emdbook)
-## bbmle::mle2(surv ~ dbinom(size=density,prob=1/(1+exp(log_a)*h*density)),
-##     parameters=list(log_a~size),
-##     start=list(log_a=0,h=1),
-##     data=ReedfrogPred)
-
-
 
 #' @importFrom Deriv Deriv
 mkfun <- function(formula, start,
@@ -99,6 +91,8 @@ mkfun <- function(formula, start,
     n_missed <- ncol(Xlist[[i]]) - length(pvec[[i]])
     if (n_missed < 0) stop('Too many argments in start for parameter: ', sQuote(i))
     if (n_missed != 0) pvec[[i]] <- c(pvec[[i]], rep(0, n_missed))
+    ## add sub model parameter names
+    names(pvec[[i]]) <- colnames(Xlist[[i]])
   }
 
   ## add parameters with no submodels
