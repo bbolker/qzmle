@@ -39,8 +39,9 @@ add_logl <- function(funct, logl, params){
 #' dd <- data.frame(y=rpois(100,lambda=1))
 #' fun1 <- mkfun(y~dpois(exp(lambda)), data=dd)
 #' fun2 <- mkfun(y~dnorm(mean = b0 + b1 * latitude^2, sd = 1), data=dd)
-#' form <- surv ~ dbinom(size = density, prob = 1/(1 + exp(log_a)*h*density))
-#' fun3 <- mkfun(form,parameters=list(log_a~poly(size)),data=emdbook::ReedfrogPred)
+#' rfp <- transform(emdbook::ReedfrogPred, nsize=as.numeric(size))
+#' form <- surv ~ dbinom(size = density, prob = exp(log_a)/(1 + exp(log_a)*h*density))
+#' fun3 <- mkfun(form,start=list(h=1,log_a=0), parameters=list(log_a~poly(nsize)),data=rfp)
 #' @export
 
 ## trying to replicate:
@@ -53,7 +54,7 @@ add_logl <- function(funct, logl, params){
 
 
 #' @importFrom Deriv Deriv
-mkfun <- function(formula,
+mkfun <- function(formula, start,
                   links=NULL,
                   parameters=NULL,
                   data) {
@@ -61,11 +62,6 @@ mkfun <- function(formula,
   if(missing(data)) {
       stop("missing data...") # if no data
   }
-
-  if(length(formula)==3) {
-    stop("should be a two-sided formula")
-  }
-
 
   response <- formula[[2]]
   ddistn <- as.character(RHS(formula)[[1]])
@@ -94,7 +90,7 @@ mkfun <- function(formula,
     pvec <- start[submodel_vars]
   } else {
     submodel_vars <- NULL
-    pvec <- start
+    pvec <- NULL
   }
 
   ## if missing arguments, use the named argument as the first element,
@@ -105,6 +101,9 @@ mkfun <- function(formula,
     if (n_missed != 0) pvec[[i]] <- c(pvec[[i]], rep(0, n_missed))
   }
 
+  ## add parameters with no submodels
+  start <- c(pvec, start[!names(start) %in% names(pvec)])
+
   ## assign distribution parameters
   mnames <- loglik_list[[ddistn]]$params
   arglist <- as.list(RHS(formula)[-1]) ## $lambda = (b0 * latitude^2), sd///delete function name
@@ -114,11 +113,13 @@ mkfun <- function(formula,
   arglist1 <- c(list(x = response),arglist,list(log = TRUE))
 
   fn <- function(pars) {
-    pars <- relist(pars, pvec)
+    pars <- relist(pars, start)
 
-    if(!missing(parameters)){
-      for (par in seq_along(pars)){
-        pars[[par]] <- c(Xlist[[par]] %*% pars[[par]])
+    if(!is.null(submodel_vars)){
+      for (par in names(pars)){
+        if(par %in% submodel_vars){
+          pars[[par]] <- c(Xlist[[par]] %*% pars[[par]])
+          }
       }
     }
 
@@ -129,11 +130,13 @@ mkfun <- function(formula,
 
 
   gr <- function(pars) {
-    pars <- relist(pars, pvec)
+    pars <- relist(pars, start)
 
-    if(!missing(parameters)){
-      for (par in seq_along(pars)){
-        pars[[par]] <- c(Xlist[[par]] %*% pars[[par]])
+    if(!is.null(submodel_vars)){
+      for (par in names(pars)){
+        if(par %in% submodel_vars){
+          pars[[par]] <- c(Xlist[[par]] %*% pars[[par]])
+        }
       }
     }
 
@@ -204,7 +207,7 @@ mkfun <- function(formula,
 
     ## d(loglik_pois/d(lambda))* d(lambda)/d(b0)
   }
-  return(list(start = pvec, fn = fn, gr = gr))
+  return(list(start = start, fn = fn, gr = gr))
 }
 
 
