@@ -1,0 +1,131 @@
+LMM: linear mixed (Gaussian, identity link)  (lme4, nlme::lme, glmmTMB, ...)
+GLMM: (nonlinear) mixed (exponential family, logit/log/cloglog/probit/inverse/sqrt ... link)
+   link functions are fully specified (no adjustable parameter)
+   inverse-link function is applied to the linear predictor
+   predicted value = g^{-1}(eta) = g^{-1} (beta0 + beta1*x1+ ...)
+   (lme4::glmer(), glmmTMB, ...)
+
+NLMM: nonlinear mixed models (Gaussian, identity link)
+
+   y ~ Gaussian(mean= K/(1+exp(-(a+b*x))),  b ~ 1|grp,  sd)
+   logistic function that goes from 0 to K
+
+IF K=1 we could fit this with glm(y~x, family=gaussian(link="logit"))
+because logit transformation takes 1/(1+exp(-(a+b*x))) -> a+b*x
+
+nlme(y~..., random = b ~1|grp)
+
+nlme, lme4::nlmer, ... ?
+
+GNLMM: generalized nonlinear mixed model
+(brms: or write your own in TMB or Stan or ...)
+Stan is a Bayesian estimation engine that's a lot like TMB
+ -> MCMC
+
+
+--
+
+Xlist
+
+list(log_a=..., log_h= ...)
+
+->
+
+PARAMETER_VECTOR(log_a_params);
+PARAMETER_VECTOR(log_h_params);
+
+DATA_MATRIX(X_log_a);
+DATA_MATRIX(X_log_h);
+
+Type log_a = X_log_a * log_a_params;
+Type log_h = X_log_h * log_h_params;
+
+## I think we can define log_a on the fly in this way but we might need
+
+Type log_a;
+Type log_h;
+
+log_a = X_log_a * log_a_params;
+log_h = X_log_h * log_h_params;
+
+Implementing random effects: model of the form
+
+  y ~ Distrib( F(phi1, phi2, phi3) )
+  phi1 = X*beta + Z*b
+  (if Z is identifier matrix then this is equivalent to
+     phi1 = X*beta + b[group[i]]
+  )
+  b ~ MVN(0, Sigma(theta)) (multivariate normal)
+
+in the simplest case Z is an identifier matrix I(i=j)
+does observation i belong to group j?
+
+
+likelihood:  integral(L(y|beta,b) * L(b|theta) , db1 db2 db3 db4 db5 ...)
+there are lot of tricks for avoiding/approximating this integral.
+Usually it's at least *separable*
+
+  integral L(y1|beta,b1) db1 * integral L(y2|beta,b2) ....
+
+we still have to do the integral.
+When we have Gaussian models this is much easier.
+If non-Gaussian:
+
+   Laplace approximation
+   (adaptive) Gauss-Hermite quadrature
+   Monte Carlo expectation-maximization
+   Markov chain Monte Carlo
+  ...
+
+TMB implements 'automatic' Laplace approximation
+if you say MakeADFun(..., random=c("b_a"))
+then it automatically treats b_a as a vector for which it
+needs to do Laplace approximation
+
+Implementation steps:
+
+* R interface:  parameters=list(log_a ~ x1 + x2 + (1|g))
+
+dd <- data.frame(x1=rnorm(100),x2=rnorm(100),
+                 g=factor(rep(1:10,each=10)))
+form <- log_a ~ x1 + x2 + (1|g)
+
+###
+lme4::nobars(form[-2])  ## fixed
+random_part <-  lme4::findbars(form[-2])
+result <- lme4::mkReTrms(random_part,dd)
+library(Matrix)
+t(result$Zt)
+
+random_part[[1]]
+
+split the formula into fixed + random part
+
+
+-> figure out how to construct Z in Zlist
+-> put Zs in TMB code
+
+
+PARAMETER_VECTOR(b_log_a);
+PARAMETER(log_sd_log_a);
+DATA_SPARSE_MATRIX(Z_log_a);
+
+...
+
+log_a += Z_log_a * exp(log_sd_log_a) * b_log_a;
+
+
+...
+
+jnll -= dbinom(whatever. ...)
+
+
+REPORT(sd_log_a=exp(log_sd_log_a));
+...
+
+## b is drawn from a *standard Normal* (mean=0,sd=1)
+jnll -= dnorm(b_log_a);
+
+---
+How do we decide on distributions/link functions/etc etc??
+---
