@@ -2,20 +2,19 @@
 #' @name TMB_template
 #' @param formula A formula in expression form of "y ~ model"
 #' @param start A list of initial values for the parameters
+#' @param links link function and the model parameter
 #' @param data A list of parameter in the formula with values in vectors
-#' @param link link function and the model parameter
 #' @examples
 #' set.seed(123)
 #' x <- runif(20, 1, 10)
 #' y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
 #' form <- y ~ dnorm(b0 + b1 * x, log_sigma)
 #' links <- list(sigma="log")
-#' TMB_template(form, start=list(b0=1,b1=2, log_sigma=sd(y)),
-#' data=list(x=x,y=y),link=c(b0="identity", b1="identity", sigma="log"))
-#' ff <- TMB_mkfun(form, start=list(b0=1,b1=2, log_sigma=sd(y)),
-#' data=list(x=x,y=y),link=c(b0="identity", b1="identity", sigma="log"))
+#' start <- list(b0=1,b1=2, log_sigma=sd(y))
+#' TMB_template(form, start=start,links=c(b0="identity", b1="identity", sigma="log"), data=list(x=x,y=y))
+#' ff <- TMB_mkfun(form, start=start,links=c(b0="identity", b1="identity", sigma="log"), data=list(x=x,y=y))
 
-TMB_template <- function(formula,start,data=NULL,link=NULL) {
+TMB_template <- function(formula,start,links=NULL, parameters=NULL, data=NULL) {
   if (!is.null(data)) {
     data_var <- character(length(data))
 
@@ -31,7 +30,7 @@ TMB_template <- function(formula,start,data=NULL,link=NULL) {
 
   ## parse distribution
   y <- formula[[2]]
-  RHS <- formula[[3]]
+  RHS <- RHS(formula)
   ddistn <- as.character(RHS[[1]])
 
   ## store all parameters
@@ -41,19 +40,52 @@ TMB_template <- function(formula,start,data=NULL,link=NULL) {
   }
 
   ## store all coefficents with linkfun
-  if (!is.null(link)){
-    coefs <- coefs_text <- character(length(link))
-    for(i in seq_along(link)){
+  ## vars names changed to link_varnames
+  if (!is.null(links)){
+    ## check if user place the same parameter as link function
+    if(all(trans_parnames(names(start))==names(start))) {
+      stop("parameter name in `start` should be in linkscale")
+
+      ## FIXME: automatically change name
+      # link_ind <- which(names(start) %in% names(links))
+      #  for(i in link_ind){
+      #    ## change pnames to link_pnames using plinkfun
+      #  }
+      ## change start names
+      # names(start) <- `[<-`(names(start), link_ind, )
+    }
+
+    ## if no links, add identity links
+    if(length(links) != length(start)){
+      pnames <- start[!trans_parnames(names(start)) %in% names(links)]
+      ilinks <- rep(list("identity"), length(pnames))
+      names(ilinks) <- names(pnames)
+      links <- c(ilinks, links)
+      links <- links[trans_parnames(names(start))]
+    }
+
+    coefs <- coefs_text <- character(sum(links!="identity"))
+    for(i in seq_along(links)) {
       coefs[i] <- trans_parnames(names(start)[i])
-      ## filters out identity link
+      ## filters out identity links
       if(!(coefs[i] %in% names(start))){
-      coefs_text[i] <- sprintf("Type %s = %s; \n", coefs[i],
-                          sprintf(all_links[[link[[i]]]], names(start)[i]))
-      }
+        coefs_text[i] <- sprintf("Type %s = %s; \n", coefs[i],
+                                 sprintf(all_links[[links[[i]]]], names(start)[i]))
+        }
+    # ## filters out identity links
+    # links <- links[links!="identity"]
+    # coefs <- link_coefs <- coefs_text <- character(length(links))
+    # for(i in seq_along(links)) {
+    #   coefs[i] <- names(links)[i]
+    #   link_coefs[i] <- plinkfun(coefs[i], links[[i]])
+    #   coefs_text[i] <- sprintf("Type %s = %s; \n", coefs[i],
+    #                            sprintf(all_links[[links[[i]]]], link_coefs[i]))
+
     }
   }
 
-  ## variables without identity link
+
+  ## variables without identity links (unchanged var names)
   trans_coefs <- setdiff(coefs, names(start))
 
   ## cpp script
@@ -78,11 +110,12 @@ TMB_template <- function(formula,start,data=NULL,link=NULL) {
 #' @param formula A formula in expression form of "y ~ model"
 #' @param start A list of initial values for the parameters
 #' @param data A list of parameter in the formula with values in vectors
-#' @param link link function and the model parameter
+#' @param links links function and the model parameter
 #' @importFrom TMB compile dynlib MakeADFun
 
-TMB_mkfun <- function(formula,start,data=NULL,link=NULL){
-  TMB_template(formula,start,data,link)
+TMB_mkfun <- function(formula,start,links=NULL, parameters=NULL, data){
+
+  TMB_template(formula,start,data,links)
   TMB::compile("template.cpp")
   dyn.load(TMB::dynlib("template"))
   obj_fun <- MakeADFun(data=data, parameters=start, DLL="template")

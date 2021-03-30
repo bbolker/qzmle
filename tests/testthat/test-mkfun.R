@@ -17,8 +17,8 @@ test_that("Poisson dist. with single parameter lambda works", {
   form <- y ~ dpois(lambda = b0 * latitude^2)
 
   ## my function
-  ff <- mkfun(form, data=dd)
-  expect_equal(names(ff), c("fn","gr"))
+  ff <- mkfun(form, start=list(b0=3), data=dd)
+  expect_equal(names(ff), c("start","fn","gr"))
 
   ## manually setting parameters
   x <- dd$y  ## pois looks for x in its environment
@@ -40,7 +40,7 @@ test_that("Poisson with two parameters", {
   form2 <- y ~ dpois(lambda = b0 + b1* latitude^2)
 
   ## my function
-  ff2 <- mkfun(form2, data=dd)
+  ff2 <- mkfun(form2, start=list(b0=3,b1=2), data=dd)
 
   ## manually setting parameters
   lambda2 <- function(b0,b1) {b0 + b1*dd$latitude^2}
@@ -73,7 +73,7 @@ test_that("Poisson with two parameters", {
 test_that("normal with single parameter mean", {
   ##formula and data
   form3 <- y ~ dnorm(mean = b0 * latitude^2, sd = 1)
-  ff3 <- mkfun(form3, data=dd)
+  ff3 <- mkfun(form3, start=list(b0=3), data=dd)
 
   m <- function(b0) { b0*dd$latitude^2 }
   expect_equal(ff3$fn(c(b0=3)),
@@ -83,7 +83,7 @@ test_that("normal with single parameter mean", {
 test_that("normal with two parameter mean", {
   ##formula and data
   form4 <- y ~ dnorm(mean = b0 + b1 * latitude^2, sd = 1)
-  ff4 <- mkfun(form4, data=dd)
+  ff4 <- mkfun(form4, start=list(b0=1, b1=2), data=dd)
   ff4$fn(c(b0=1, b1=2))
 
   m <- function(b0, b1) {b0 + b1*dd$latitude^2}
