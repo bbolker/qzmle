@@ -10,7 +10,7 @@ all_links <- c("logit"="invlogit(%s)",
                "inverse"="(1/%s)")
 
 
-
+## used in mle.R
 ## make param name with link function prefix
 plinkfun <- function(pname, linkname) {
   ifelse(linkname=="identity",pname,
@@ -18,7 +18,7 @@ plinkfun <- function(pname, linkname) {
 }
 
 
-
+## used in TMB.R
 ## get param names from "linkfun_pname"
 trans_parnames <- function(p) {
   regex <- sprintf("(%s)_", paste(names(all_links),collapse="|"))

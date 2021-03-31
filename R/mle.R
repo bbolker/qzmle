@@ -22,13 +22,14 @@
 #' fit <- mle(form, start=list(b0=1,b1=2, log_sigma=sd(y)),
 #' data=list(x=x,y=y),links=c(b0="identity", b1="identity", sigma="log"))
 #' ## linear submodels
+#' set.seed(101)
 #' rfp <- transform(emdbook::ReedfrogPred, nsize=as.numeric(size), random=rnorm(48))
 #' form <- surv ~ dbinom(size = density, prob = exp(log_a)/(1 + exp(log_a)*h*density))
 #' fit4 <- mle(form,start=list(h=4,log_a=2), parameters=list(log_a~poly(random)),data=rfp)
 #' @export
 
 #' ## fit4 check
-## bbmle::mle2(form,parameters=list(log_a~poly(random)),start=list(log_a=c(2,0), h=4),data=rfp)
+## bbfit4 <- bbmle::mle2(form,parameters=list(log_a~poly(random)),start=list(log_a=c(2,0), h=4),data=rfp)
 
 #' @importFrom stats optim optimHess make.link
 #' @importFrom numDeriv jacobian hessian
@@ -40,11 +41,29 @@ mle <- function(form, start, data,
                 control=mle_control(),
                 method=c("R", "TMB")) {
 
+    ## check bad link functions
+    if(!is.null(links)) {
+      bad_links <- which(is.na(unname(all_links[links])))
+      if(length(bad_links)>0){
+        stop("undefined link(s): ", paste(links[bad_links], collapse=", "))
+      }
+
+     ## Automatically translate scales
+    ## FIXME: need to use mklinkfun as check
+      # plinkscale <- numeric(length(start))
+      # names(plinkscale) <- plinkfun(names(start), links)
+      # for (i in seq_along(plinkscale)) {
+      #   mm <- make.link(links[[i]])
+      #   plinkscale[[i]] <- mm$linkfun(start[[i]])
+      # }
+    }
+
+
     ## calling TMB integration if chose to
     method = match.arg(method)
     ff <- switch(method,
-        TMB = TMB_mkfun(form, data, start, links),
-        R =  mkfun(form, start, links,  parameters, data),
+        TMB = TMB_mkfun(form, start, links, parameters, data),
+        R =  mkfun(form, start, links, parameters, data),
         stop(paste("unknown method",sQuote(method)))
     )
 
