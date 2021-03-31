@@ -1,6 +1,6 @@
 library(TMB)
-compile("../sandbox/TMB_stuff/submodel.cpp")
-dyn.load(dynlib("../sandbox/TMB_stuff/submodel"))
+compile("./submodel.cpp")
+dyn.load(dynlib("./submodel"))
 
 set.seed(101)
 rfp <- transform(emdbook::ReedfrogPred,
@@ -28,12 +28,26 @@ obj <- MakeADFun(
 
 ## sdreport(obj)
 
-opt2 <- with(obj, optim(par = par, fn = fn, gr=gr, method = "BFGS"))
-opt3 <- with(obj, nlminb(start = par, obj = fn, gr=gr))
+opt2 <- with(obj, optim(par = par, fn = fn, gr=gr, method = "BFGS", hessian = F))
 
+print(opt3 <- with(obj, nlminb(start = par, obj = fn, gr=gr)))
+
+
+## Check
+log_a <- c(X_log_a %*% c(opt3$par[1:2]))
+h <- opt3$par[3]
+
+binom <- function(size, prob, x) {log(size)+x*log(prob)+(size-x)*log((1-prob))}
+binom(size = rfp$density, prob = exp(log_a)/(1 + exp(log_a)*h*rfp$density), x= rfp$surv)
+## getting NAs, prob > 1
+print(prob <- exp(log_a)/(1 + exp(log_a)*h*rfp$density))
+
+log_a <- c(X_log_a %*% c(fit@coef[1:2]))
+h <- fit$coef[3]
+d <- dbinom(rfp$surv, size = rfp$density, prob = exp(log_a)/(1 + exp(log_a)*h*rfp$density))
 
 ## step by step check
-fun4 <- mkfun(form,start=list(h=4,log_a=2),
-              parameters=list(log_a~poly(random)),data=rfp)
+# fun4 <- mkfun(form,start=list(h=4,log_a=2),
+#               parameters=list(log_a~poly(random)),data=rfp)
+# opt4 <- with(fun4, nlminb(start = unlist(start), obj = fn, gr=gr))
 
-opt4 <- with(fun4, nlminb(start = unlist(start), obj = fn, gr=gr))
