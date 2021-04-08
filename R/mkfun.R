@@ -71,10 +71,6 @@ mkfun <- function(formula, start,
   ## submodels
   if(!missing(parameters)) {
     ## setting up submodels
-    parameter_parse <- function(formula, data){
-    X <- model.matrix(onesided_formula(formula), data=data)
-      return(X)
-    }
     submodel_vars <- vapply(parameters,LHS_to_char,FUN.VALUE=character(1))
     Xlist <- lapply(parameters,parameter_parse, data=data)
     names(Xlist) <- submodel_vars

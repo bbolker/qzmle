@@ -34,10 +34,12 @@
 #' @importFrom stats optim optimHess make.link
 #' @importFrom numDeriv jacobian hessian
 #' @importFrom MASS ginv
+#' @importFrom lme4 findbars
 mle <- function(form, start, data,
                 fixed=NULL,
                 parameters=NULL,
                 links=NULL,
+                random=NULL,
                 control=mle_control(),
                 method=c("R", "TMB")) {
 
@@ -61,13 +63,25 @@ mle <- function(form, start, data,
 
     ## calling TMB integration if chose to
     method = match.arg(method)
+
+    ## check for random effect and send to TMB
+    if(!is.null(parameters)){
+      reTerms <- unlist(sapply(parameters, lme4::findbars))
+      if(!is.null(reTerms)){
+        if(method != "TMB") warning("Computing random effects in TMB")
+        method <- "TMB"
+      }
+    }
+
+
+    ## make obj fun and gradients
     ff <- switch(method,
         TMB = TMB_mkfun(form, start, links, parameters, data),
         R =  mkfun(form, start, links, parameters, data),
         stop(paste("unknown method",sQuote(method)))
     )
 
-    ## optim work
+    ## optimize using optim BGFS
     argList <- list(par=unlist(ff$start), fn=ff$fn, gr=ff$gr)
     opt <- do.call(stats::optim, c(argList,control$optControl))
 

@@ -25,6 +25,11 @@ trans_parnames <- function(p) {
   gsub(regex,"",p)
 }
 
+## submodels
+parameter_parse <- function(formula, data){
+  X <- model.matrix(onesided_formula(formula), data=data)
+  return(X)
+}
 
 ## Check if objective function exists
 ## examples

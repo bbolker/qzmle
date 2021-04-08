@@ -29,6 +29,8 @@ form <- surv ~ dbinom(size = density,
                       prob = plogis(logit_a)/(1 + plogis(logit_a)*
                                               exp(log_h)*density))
 
+parms <- log_a ~ 1 + (1|block)
+
 ##bbmle
 mle1 <- bbmle::mle2(form,start=list(logit_a=c(2,0), log_h=log(4)),
                     parameters=list(logit_a~poly(random)),data=rfp)

@@ -16,7 +16,9 @@ mle1 <- bbmle::mle2(form,start=list(log_a=c(2,0), h=4),
 
 
 ## qzmle
-## mle(form,start=list(h=4,log_a=2),parameters=list(log_a~poly(random)),data=rfp)
+## mle(form,start=list(h=4,log_a=2),
+## parameters=list(log_a~poly(random)),
+## data=rfp)
 
 X_log_a <- model.matrix(~poly(random), data=rfp)
 
