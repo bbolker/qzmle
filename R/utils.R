@@ -27,8 +27,14 @@ trans_parnames <- function(p) {
 
 ## submodels
 parameter_parse <- function(formula, data){
-  X <- model.matrix(onesided_formula(formula), data=data)
+  X <- model.matrix(formula, data=data)
   return(X)
+}
+
+re_parameter_parse <- function(formula, data){
+  rt <- lme4::mkReTrms(formula, fr=data)
+  Z <- Matrix::t(rt$Zt)
+  return(Z)
 }
 
 ## Check if objective function exists
