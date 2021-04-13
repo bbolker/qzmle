@@ -72,6 +72,7 @@ mkfun <- function(formula, start,
   if(!missing(parameters)) {
     ## setting up submodels
     submodel_vars <- vapply(parameters,LHS_to_char,FUN.VALUE=character(1))
+    parameters <- sapply(parameters, "[", -2)
     Xlist <- lapply(parameters,parameter_parse, data=data)
     names(Xlist) <- submodel_vars
     ## make sure start values of parameters in the same order as the Xlist
