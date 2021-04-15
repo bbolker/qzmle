@@ -37,7 +37,7 @@ add_logl <- function(funct, logl, params){
 #' @examples
 #' set.seed(101)
 #' dd <- data.frame(y=rpois(100,lambda=1))
-#' fun1 <- mkfun(y~dpois(exp(lambda)), data=dd)
+#' fun1 <- mkfun(y~dpois(exp(lambda)), start=list(lambda=0), data=dd)
 #' fun2 <- mkfun(y~dnorm(mean = b0 + b1 * latitude^2, sd = 1), data=dd)
 #' rfp <- transform(emdbook::ReedfrogPred, nsize=as.numeric(size), random=rnorm(48))
 #' form <- surv ~ dbinom(size = density, prob = exp(log_a)/(1 + exp(log_a)*h*density))
@@ -100,7 +100,10 @@ mkfun <- function(formula, start,
   arglist <- as.list(RHS(formula)[-1]) ## $lambda = (b0 * latitude^2), sd///delete function name
 
   ## FIXME: might break something
-  ## names(arglist) <- mnames
+  if (is.null(submodel_vars)){
+    names(arglist) <- mnames
+  }
+
   arglist1 <- c(list(x = response),arglist,list(log = TRUE))
 
   fn <- function(pars) {

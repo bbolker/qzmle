@@ -2,3 +2,5 @@
 * the `repeated` package has a [gnlmm function](https://www.rdocumentation.org/packages/repeated/versions/1.1.2/topics/gnlmm); there are a bunch of examples listed the documentation, although they're all made-up (i.e. not real data)
 * apparently the `nlmixr` package also has a gnlmm function (see [here](https://rdrr.io/github/nlmixrdevelopment/nlmixr/man/gnlmm.html))
 * maybe also the `gnm` package according to [this](https://stat.ethz.ch/pipermail/r-sig-mixed-models/2019q1/027594.html) ?
+
+https://cran.r-project.org/web/packages/gnm/vignettes/gnmOverview.pdf
