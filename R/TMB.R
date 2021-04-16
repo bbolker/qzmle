@@ -31,11 +31,12 @@
 #' logit_a_blk <- rnorm(20, mean=true_logit_a, sd=true_logit_a_sd)
 #' a <- plogis(logit_a_blk[rfpsim$block])
 #' prob <- a/(1 + a*exp(true_log_h)*rfpsim$density)
-#' rfpsim$surv <- rbinom(nrow(rfpsim),size=rfpsim$density, prob=prob)
-#' form <- surv ~ dbinom(size = density,prob = plogis(logit_a)/(1 + plogis(logit_a)*exp(log_h)*density))
+#' rfpsim$killed <- rbinom(nrow(rfpsim),size=rfpsim$density, prob=prob)
+#' form <- killed ~ dbinom(size = density,prob = plogis(logit_a)/(1 + plogis(logit_a)*exp(log_h)*density))
 #' parameters <- list(logit_a ~ 1 + (1|block))
 #' links <- list(a="logit", h="log")
 #' start <- list(logit_a=c(0), log_h=0)
+#' TMB_template(form, start=start,links=links, parameters=parameters, data=rfpsim)
 #' @importFrom lme4 nobars findbars mkReTrms
 #' @importFrom Matrix t
 
@@ -128,7 +129,9 @@ TMB_template <- function(formula,start,
       ## penalization on nll
       nll_pen[i] <- sprintf("nll -= sum(dnorm(%s, Type(0), Type(1), true));\n", re_rand)
     }
-  } else {re_data <- re_param <- re_eq <- re_param_vec <- nll_pen <- NULL}
+  } else {re_data <- re_param <- re_eq <- re_param_vec <- re_rand <- nll_pen <- NULL}
+
+  ##FIXME: re_rand should be vector
 
   ## if missing start arguments, use the named argument as the first element,
   ## all other elements of the sub-model parameter vector are 0
@@ -263,9 +266,14 @@ TMB_template <- function(formula,start,
   }
   names(start) <- start_pname
   start <- sapply(start, unname)
+  int_n <- length(start)
+  ##re_rand
+  re_sd=list(rep(0, 20))
+  start <- c(start, res_sdname=re_sd, re_rand=0)
+  names(start) <- c(names(start)[1:int_n],re_rand, re_sdname)
 
   names(Xlist) <- X_pname
-  data_list <- c(data_list, Xlist)
+  data_list <- c(data_list, Xlist, Zlist, named_list(re_rand))
 
   return(list(data=data_list, start=start))
 }
@@ -285,8 +293,8 @@ TMB_mkfun <- function(formula,start, links=NULL, parameters=NULL, data){
   TMB::compile("template.cpp")
   dyn.load(TMB::dynlib("template"))
   obj_fun <- MakeADFun(data=data_list$data, parameters= data_list$start, silent = T,
-                       DLL="template"
-                       ## random="logit_a_rand_param"
+                       DLL="template",
+                       random=data_list$re_rand
                        )
   obj_fun <- c(obj_fun, start = list(data_list$start))
   return(obj_fun)
