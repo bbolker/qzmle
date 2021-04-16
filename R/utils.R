@@ -10,6 +10,13 @@ all_links <- c("logit"="invlogit(%s)",
                "inverse"="(1/%s)")
 
 
+## convert "plogis" into explicit logit function
+spot_plogis <- function(form) {
+  sub <- c("plogis"="exp(%s)/(1+exp(%s))")
+  regex <- sprintf("%s", names(sub))
+  gsub(regex, "", form) }
+
+
 ## used in mle.R
 ## make param name with link function prefix
 plinkfun <- function(pname, linkname) {

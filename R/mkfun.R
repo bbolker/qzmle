@@ -69,7 +69,7 @@ mkfun <- function(formula, start,
   }
 
   ## submodels
-  if(!missing(parameters)) {
+  if(!is.null(parameters)) {
     ## setting up submodels
     submodel_vars <- vapply(parameters,LHS_to_char,FUN.VALUE=character(1))
     parameters <- sapply(parameters, "[", -2)

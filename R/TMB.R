@@ -3,6 +3,7 @@
 #' @param formula A formula in expression form of "y ~ model"
 #' @param start A list of initial values for the parameters
 #' @param links link function and the model parameter
+#' @param parameters A list of linear submodels and random effects
 #' @param data A list of parameter in the formula with values in vectors
 #' @examples
 #' set.seed(123)
@@ -42,6 +43,7 @@ TMB_template <- function(formula,start,
                          links=NULL,
                          parameters=NULL,
                          data=NULL) {
+
   ## add data vectors
   if (!is.null(data)) {
     ## parse data in formula
@@ -126,7 +128,7 @@ TMB_template <- function(formula,start,
       ## penalization on nll
       nll_pen[i] <- sprintf("nll -= sum(dnorm(%s, Type(0), Type(1), true));\n", re_rand)
     }
-  }
+  } else {re_data <- re_param <- re_eq <- re_param_vec <- nll_pen <- NULL}
 
   ## if missing start arguments, use the named argument as the first element,
   ## all other elements of the sub-model parameter vector are 0
@@ -142,14 +144,16 @@ TMB_template <- function(formula,start,
   start <- c(pvec, start[!names(start) %in% names(pvec)])
 
   ## store all parameters and submodel
-  params <- character(length(start))
+  params <- start_pname <- character(length(start))
   submodel_eq <- submodel_data_text <- X_pname <- character(length(submodel_vars))
 
   for (i in seq_along(start)) {
     if ((length(start[[i]]) > 1) || (names(start)[i] %in% submodel_vars)) {
       pname_param <- paste0(names(start)[i], "_param")
+      start_pname[i] <- pname_param
       params[i] <- sprintf("PARAMETER_VECTOR(%s); \n", pname_param)
     } else{
+      start_pname[i] <- names(start)[i]
       params[i] <- sprintf("PARAMETER(%s); \n", names(start)[i])
     }
 
@@ -161,6 +165,10 @@ TMB_template <- function(formula,start,
                                 names(start)[i], X_pname[i], pname_param[i])
     }
   }
+
+  # if(is.null(links)){
+  #   links <- character(length(start))
+  # }
 
   ## store all coefficents with linkfun
   ## vars names changed to link_varnames
@@ -245,8 +253,6 @@ TMB_template <- function(formula,start,
                   paste(coefs_text, collapse=''), ## linkfun
                   nll, nll_pen, return_text)
 
-
-
   ##return(model)
   write(model, file='template.cpp')
 
@@ -255,10 +261,13 @@ TMB_template <- function(formula,start,
   for (i in data_vars){
     data_list[[i]] <- data[[i]]
   }
+  names(start) <- start_pname
+  start <- sapply(start, unname)
+
   names(Xlist) <- X_pname
   data_list <- c(data_list, Xlist)
 
-  return(data=data_list)
+  return(list(data=data_list, start=start))
 }
 
 
@@ -271,15 +280,15 @@ TMB_template <- function(formula,start,
 #' @param links links function and the model parameter
 #' @importFrom TMB compile dynlib MakeADFun
 
-TMB_mkfun <- function(formula,start,links=NULL, parameters=NULL, data){
-
-  data_list <- TMB_template(formula,start,data,links)
+TMB_mkfun <- function(formula,start, links=NULL, parameters=NULL, data){
+  data_list <- TMB_template(formula,start,links, parameters, data)
   TMB::compile("template.cpp")
   dyn.load(TMB::dynlib("template"))
-  obj_fun <- MakeADFun(data=data_list, parameters=start, silent = T,
-                       DLL="template",
+  obj_fun <- MakeADFun(data=data_list$data, parameters= data_list$start, silent = T,
+                       DLL="template"
                        ## random="logit_a_rand_param"
                        )
+  obj_fun <- c(obj_fun, start = list(data_list$start))
   return(obj_fun)
 }
 

@@ -5,7 +5,7 @@
 #' @param start A list of initial values for parameters
 #' @param data A list of parameter in the formula with values in vectors
 #' @param fixed A list of parameter in the formula to keep fixed during optimization
-#' @param parameters A list of linear submodels
+#' @param parameters A list of linear submodels and random effects
 #' @param control A list of parameter to pass to optimizer (See `mle_control`)
 #' @param links link function for parameters (identity link as default)
 #' @param method base R or TMB integration
@@ -37,15 +37,15 @@
 #' @importFrom lme4 findbars
 mle <- function(form, start, data,
                 fixed=NULL,
-                parameters=NULL,
                 links=NULL,
+                parameters=NULL,
                 random=NULL,
                 control=mle_control(),
                 method=c("R", "TMB")) {
 
     ## check bad link functions
     if(!is.null(links)) {
-      bad_links <- which(is.na(unname(all_links[links])))
+      bad_links <- which(is.na(unname(all_links[unlist(links)])))
       if(length(bad_links)>0){
         stop("undefined link(s): ", paste(links[bad_links], collapse=", "))
       }
