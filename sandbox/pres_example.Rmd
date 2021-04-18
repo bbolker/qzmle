@@ -1,0 +1,43 @@
+---
+title: "Presentation thing"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+devtools::install_github("queezzz/qzmle")
+```
+
+```{r, message=F, warning=FALSE}
+rfp <- transform(emdbook::ReedfrogPred, 
+                 killed=density-surv, 
+                 nsize=as.numeric(size)-1)
+
+form <- killed ~ dbinom(size = density, 
+                        prob = exp(log_a)/(1 + exp(log_a) * h * density))
+
+## devtools::install_github("queezzz/qzmle")
+library(qzmle)
+
+qzmle::mle(form, 
+           start=list(h=4,log_a=c(1,2)), 
+           parameters=list(log_a~1+nsize), 
+           links=list(a="log"), data=rfp)
+```
+
+```{r, message=F, warning=FALSE, }
+qzmle::mle(form, start=list(h=4,log_a=2), 
+           parameters=list(log_a~1+nsize),
+           links=list(a="log"), 
+           data=rfp, 
+           method="TMB")
+```
+
+
+
+```{r}
+(emdbook::ReedfrogPred)
+```
+
+

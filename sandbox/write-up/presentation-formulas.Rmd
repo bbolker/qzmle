@@ -1,0 +1,71 @@
+## Project intro 
+
+### Slide 
+What is this project?? Build R package for extensive MLE modelling with TMB/C++ backend
+
+(briefly mentioned R, motivation to improve open-sourced community)
+
+
+## Intro of likelihood and modelling
+
+### Slide
+
+What is MLE and why is it important?
+
+ * When we have real world data and we want to construct a model that explains the data...
+ 
+ * likelihood vs probability vs data (square diagram)
+ * example... 
+ 
+
+
+## Slide 2
+
+Given some sample observations $x_1, ..., x_n$ that follow a parametric distribution with probability density function $f(x_1,...,x_n | \theta)$ where $\theta$ is the model parameter, then the likelihood function, and log-likelihood function are denoted as:
+$$ L(\theta | x_i) =  \prod_{i=1}^{n} f(x_i | \theta) \;\;\;\;\;\;\;\; l(\theta) = \sum_{i=1}^{n} ln(f(x_i | \theta))$$
+
+Find the model parameter that maximize the the likelihood, or $ \hat \theta = \argmax_\theta l(\theta)$ in which the value of $\hat \theta$ satisfies:
+
+$$\frac{\partial l}{\partial \theta} = 0 $$  
+
+## Slide 3
+
+Basic: $ X \sim f(\theta_i)$ 
+
+e.g. $X \sim \textrm{Binom}(p)$ or $X \sim \textrm{Gamma}(\alpha, \beta)$
+
+\bigskip
+\bigskip
+
+Parameter $\theta$ depends on covariates $w_i$: 
+$$X \sim f(\theta) \;\;\;\;\; \theta = h(w_1,...,w_i)$$ 
+
+\centerline{e.g. Linear model, $Y \sim Norm(\mu, \sigma), \;\;\;\; \mu = b_0+b_1 \cdot x$}
+
+\bigskip
+\bigskip
+
+Link functions $g$ on covariate $w_1$: 
+$$X \sim f(\theta) \;\;\;\;\; \theta = h(g(w_1),...,w_i)$$
+
+\centerline{e.g. $g$ is logit function on $w_i$ where $0 < w_i < 1$ }
+
+
+## Slide AD
+
+$$\frac{\partial l}{\partial b_i} = \frac{\partial l}{\partial \theta} \cdot \frac{\partial \theta}{\partial g(w_i)} \cdot \frac{\partial g(w_1)}{\partial w_1} \cdot \frac{\partial w_1}{\partial b_i} $$ 
+
+## RE
+
+$$Y \sim f(\theta) $$
+$$ \theta = \underbrace{h(w_1,..., w_i)}_{\text{fixed effect}} + \underbrace{Z \cdot b}_{\text{random effect}} \;\;\;\;\; b \sim \textrm{MVN}(0, G) $$
+
+
+## devtools::install_github("queezzz/qzmle")
+
+
+qzmle::mle(form, 
+           start=list(logit_a=c(0), log_h=0),  
+           parameters <- list(logit_a ~ 1 + (1|tank)),
+           links <- list(a="logit", h="log"),
+           data=rfpsim, method="TMB")
