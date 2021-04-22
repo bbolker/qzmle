@@ -1,0 +1,14 @@
+---
+title: "a markdown file with citations"
+bibliography: tmp.bib
+output: pdf_document
+---
+
+1. Save refs to BibTeX, maybe via Zotero ("Export"/"BibTeX") or CTRL-SHIFT-C
+
+This is a citation: @brooks_modeling_2017.
+
+Or in parenthesis: [@brooks_modeling_2017]
+
+## References
+
