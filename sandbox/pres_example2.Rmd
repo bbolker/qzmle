@@ -1,0 +1,37 @@
+---
+title: "Presentation thing"
+output:
+  html_document:
+    df_print: paged
+---
+
+```{r}
+devtools::install_github("queezzz/qzmle", forced=TRUE)
+```
+
+```{r, message=F, warning=FALSE}
+rfpsim <- expand.grid(density=1:20,block=factor(1:20))
+true_logit_a <- -1
+true_log_h <- -1
+true_logit_a_sd <- 0.3  ## log(0.3) = -1.20
+set.seed(101)
+logit_a_blk <- rnorm(20, mean=true_logit_a, sd=true_logit_a_sd)
+a <- plogis(logit_a_blk[rfpsim$block])
+prob <- a/(1 + a*exp(true_log_h)*rfpsim$density)
+rfpsim$killed <- rbinom(nrow(rfpsim),size=rfpsim$density, prob=prob)
+form <- killed ~ dbinom(size = density,prob = plogis(logit_a)/(1 +plogis(logit_a)*exp(log_h)*density))
+parameters <- list(logit_a ~ 1 + (1|block))
+links <- list(a="logit", h="log")
+start <- 
+library(qzmle)
+qzmle::mle(form, 
+           start=list(logit_a=c(0), log_h=0),
+           links= list(a="logit", h="log"), 
+           parameters=list(logit_a ~ 1 + (1|block)), 
+           data=rfpsim, method = "TMB")
+
+
+```
+
+
+

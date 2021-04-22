@@ -7,16 +7,16 @@ set.seed(101)
 rfp <- transform(emdbook::ReedfrogPred,
                  nsize=as.numeric(size),
                  random=rnorm(48),
-                 tank=rep(1:6,each=8))
+                 block=rep(1:6,each=8))
 
-rfpsim <- expand.grid(density=1:20,tank=factor(1:20))
+rfpsim <- expand.grid(density=1:20,block=factor(1:20))
 true_logit_a <- -1
 true_log_h <- -1
 true_logit_a_sd <- 0.3  ## log(0.3) = -1.20
 set.seed(101)
 ## pick logit_a values for each block
 logit_a_blk <- rnorm(20, mean=true_logit_a, sd=true_logit_a_sd)
-a <- plogis(logit_a_blk[rfpsim$tank])
+a <- plogis(logit_a_blk[rfpsim$block])
 prob <- a/(1 + a*exp(true_log_h)*rfpsim$density)
 rfpsim$surv <- rbinom(nrow(rfpsim),
                       size=rfpsim$density,
@@ -28,8 +28,6 @@ rfpsim$surv <- rbinom(nrow(rfpsim),
 form <- surv ~ dbinom(size = density,
                       prob = plogis(logit_a)/(1 + plogis(logit_a)*
                                               exp(log_h)*density))
-
-parms <- log_a ~ 1 + (1|block)
 
 ##bbmle
 mle1 <- bbmle::mle2(form,start=list(logit_a=c(2,0), log_h=log(4)),
