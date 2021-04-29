@@ -24,21 +24,21 @@ What is MLE and why is it important?
 Given some sample observations $x_1, ..., x_n$ that follow a parametric distribution with probability density function $f(x_1,...,x_n | \theta)$ where $\theta$ is the model parameter, then the likelihood function, and log-likelihood function are denoted as:
 $$ L(\theta | x_i) =  \prod_{i=1}^{n} f(x_i | \theta) \;\;\;\;\;\;\;\; l(\theta) = \sum_{i=1}^{n} ln(f(x_i | \theta))$$
 
-Find the model parameter that maximize the the likelihood, or $ \hat \theta = \argmax_\theta l(\theta)$ in which the value of $\hat \theta$ satisfies:
+Find the model parameter that maximize the the likelihood, or $ \hat \theta = \text{argmax}_\theta \textrm{L}(\theta)$ in which the value of $\hat \theta$ satisfies:
 
 $$\frac{\partial l}{\partial \theta} = 0 $$  
 
 ## Slide 3
 
-Basic: $ X \sim f(\theta_i)$ 
+Basic: $ Y \sim f(\theta_i)$ 
 
-e.g. $X \sim \textrm{Binom}(p)$ or $X \sim \textrm{Gamma}(\alpha, \beta)$
+e.g. $Y \sim \textrm{Binom}(p)$ or $Y \sim \textrm{Gamma}(\alpha, \beta)$
 
 \bigskip
 \bigskip
 
 Parameter $\theta$ depends on covariates $w_i$: 
-$$X \sim f(\theta) \;\;\;\;\; \theta = h(w_1,...,w_i)$$ 
+$$Y \sim f(\theta) \;\;\;\;\; \theta = h(w_1,...,w_i)$$ 
 
 \centerline{e.g. Linear model, $Y \sim Norm(\mu, \sigma), \;\;\;\; \mu = b_0+b_1 \cdot x$}
 
@@ -46,7 +46,7 @@ $$X \sim f(\theta) \;\;\;\;\; \theta = h(w_1,...,w_i)$$
 \bigskip
 
 Link functions $g$ on covariate $w_1$: 
-$$X \sim f(\theta) \;\;\;\;\; \theta = h(g(w_1),...,w_i)$$
+$$Y \sim f(\theta) \;\;\;\;\; \theta = h(g(w_1),...,w_i)$$
 
 \centerline{e.g. $g$ is logit function on $w_i$ where $0 < w_i < 1$ }
 
