@@ -56,5 +56,6 @@ fit <- mle(form,
 set.seed(101)
 rfp <- transform(emdbook::ReedfrogPred, nsize = as.numeric(size), random = rnorm(48))
 form <- surv ~ dbinom(size = density, prob = exp(log_a) / (1 + exp(log_a) * h * density))
-fit4 <- mle(form, start = list(h = 4, log_a = 2), parameters = list(log_a ~ poly(random)), data = rfp)
+fit4 <- mle(form, start = list(h = 4, log_a = 2),
+            parameters = list(log_a ~ poly(random)), data = rfp)
 }

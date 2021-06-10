@@ -1,4 +1,4 @@
-#' Make model template to be compiled and return datalist
+#' Make model template to be compiled and return data list
 #' @name TMB_template
 #' @param formula A formula in expression form of "y ~ model"
 #' @param start A list of initial values for the parameters
@@ -72,8 +72,13 @@ TMB_template <- function(formula, start,
   arglist <- as.list(RHS(formula)[-1])
   ## unname(sapply(arglist, deparse))
 
+  ## stubs for submodel vars
+  Xlist <- Zlist <- NULL
+  submodel_vars <- prec <- pvec <- NULL
+  re_data <- re_param <- re_eq <- re_param_vec <-
+    re_sdname <- re_rand <- nll_pen <- NULL
+
   ## submodels
-  submodel_vars <- prec <- NULL
   if (!missing(parameters)) {
     ## setting up submodels
     submodel_vars <- vapply(parameters, LHS_to_char, FUN.VALUE = character(1))
@@ -86,8 +91,6 @@ TMB_template <- function(formula, start,
     names(Xlist) <- submodel_vars
     ## make sure start values of parameters in the same order as the Xlist
     pvec <- start[submodel_vars]
-  }
-
 
   ## Setting up random terms
   if (!all(sapply(random_terms, is.null))) {
@@ -131,17 +134,15 @@ TMB_template <- function(formula, start,
       ## penalization on nll
       nll_pen[i] <- sprintf("nll -= sum(dnorm(%s, Type(0), Type(1), true));\n", re_rand)
     }
-  } else {
-    re_data <- re_param <- re_eq <- re_param_vec <- re_rand <- nll_pen <- NULL
   }
-
+  } ## if parameters (submodels) specified
   ## FIXME: re_rand should be vector
 
   ## if missing start arguments, use the named argument as the first element,
   ## all other elements of the sub-model parameter vector are 0
   for (i in submodel_vars) {
     n_missed <- ncol(Xlist[[i]]) - length(pvec[[i]])
-    if (n_missed < 0) stop("Too many argments in start for parameter: ", sQuote(i))
+    if (n_missed < 0) stop("Too many arguments in start for parameter: ", sQuote(i))
     if (n_missed != 0) pvec[[i]] <- c(pvec[[i]], rep(0, n_missed))
     ## add sub model parameter names
     names(pvec[[i]]) <- colnames(Xlist[[i]])
@@ -164,7 +165,7 @@ TMB_template <- function(formula, start,
       params[i] <- sprintf("PARAMETER(%s); \n", names(start)[i])
     }
 
-    ## submodel data and parametrization
+    ## submodel data and parameterization
     if (names(start)[i] %in% submodel_vars) {
       X_pname <- paste0("X_", names(start)[i])
       submodel_data_text[i] <- sprintf("DATA_MATRIX(%s); \n", X_pname)
@@ -179,12 +180,12 @@ TMB_template <- function(formula, start,
   #   links <- character(length(start))
   # }
 
-  ## store all coefficents with linkfun
+  ## store all coefficients with linkfun
   ## vars names changed to link_varnames
   if (!is.null(links)) {
     ## check if user place the same parameter as link function
     if (all(trans_parnames(names(start)) == names(start))) {
-      stop("parameter name in `start` should be in linkscale")
+      stop("parameter name in `start` should be in link scale")
 
       ## FIXME: automatically change name?? necessary??
       # link_ind <- which(names(start) %in% names(links))
@@ -205,7 +206,12 @@ TMB_template <- function(formula, start,
     }
 
     coefs <- coefs_text <- character(length(links))
-    trans_coefs <- character(length(links[links != "identity"]))
+
+    browser()
+    ## FIXME:: making trans_coefs full length leads to bogus start entries
+    ## making it shorter (i.e. restricting this loop to non-identity links)
+    ##  leads to other problems
+    trans_coefs <- rep(NA_character_, length(links))
     for (i in seq_along(links)) {
       ## e.g "log_a" -> "a"
       coefs[i] <- trans_parnames(names(start)[i])
@@ -222,23 +228,25 @@ TMB_template <- function(formula, start,
         }
         trans_coefs[i] <- link_pname
         names(trans_coefs)[i] <- coefs[i]
-        ## incase it is logit
+        ## in case it is logit
         trans_coefs[i] <- gsub("invlogit", "plogis", trans_coefs[i])
       }
     }
   }
-
+  trans_coefs <- trans_coefs[!is.na(trans_coefs)]
 
   ## make sure to vectorize parameter when needed
-  for (i in seq_along(arglist)) {
-    if (length(grep(submodel_vars, arglist[[i]])) > 0) {
-      arglist[[i]] <- sprintf("vector<Type>(%s)", deparse(arglist[[i]]))
+  if (!is.null(submodel_vars)) {
+    for (i in seq_along(arglist)) {
+      if (length(grep(submodel_vars, arglist[[i]])) > 0) {
+        arglist[[i]] <- sprintf("vector<Type>(%s)", deparse(arglist[[i]]))
+      }
     }
   }
 
   ## substitute transformed parameter without link name
   for (i in seq_along(trans_coefs)) {
-    arglist <- gsub(trans_coefs[[i]], names(trans_coefs)[i], arglist, fixed = T)
+    arglist <- gsub(trans_coefs[[i]], names(trans_coefs)[i], arglist, fixed = TRUE)
   }
 
 
@@ -260,7 +268,7 @@ TMB_template <- function(formula, start,
     paste(params, collapse = ""), ## parameters
     paste(re_param_vec, collapse = ""), ## random parameter
     paste(re_param, collapse = ""), ## random sd
-    paste(submodel_eq, collapse = ""), ## submodel parametrization
+    paste(submodel_eq, collapse = ""), ## submodel parameterization
     paste(re_eq, collapse = ""), ## add r.e to predictor
     paste(coefs_text, collapse = ""), ## linkfun
     nll, nll_pen, return_text
@@ -277,12 +285,18 @@ TMB_template <- function(formula, start,
   names(start) <- start_pname
   start <- sapply(start, unname)
   int_n <- length(start)
+
+  ## FIXME: this was clearly messed with to make something work.
+  ##  doesn't work in general!
   ## re_rand
+
+  ## if RE models exist, then ... ?
+
   re_sd <- list(rep(0, 20))
   start <- c(start, res_sdname = re_sd, re_rand = 0)
   names(start) <- c(names(start)[1:int_n], re_rand, re_sdname)
 
-  names(Xlist) <- X_pname
+  if (!is.null(Xlist)) names(Xlist) <- X_pname
   data_list <- c(data_list, Xlist, Zlist, named_list(re_rand))
 
   return(list(data = data_list, start = start))
