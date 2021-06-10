@@ -3,9 +3,10 @@ library(testthat)
 set.seed(101)
 d <- data.frame(x = 0:10, y = c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
 if (requireNamespace("emdbook")) {
-  data("ReedfrogPred")
-  rfp <- transform(emdbook::ReedfrogPred, nsize = as.numeric(size), random = rnorm(48))
+  data("ReedfrogPred", package="emdbook")
+  rfp <- transform(ReedfrogPred, nsize = as.numeric(size), random = rnorm(48))
   form <- surv ~ dbinom(size = density, prob = exp(log_a) / (1 + exp(log_a) * h * density))
+  ## FIXME: does plogis() work too (or do we need to add it to deriv table?)
 
   ## test if getting same result as bbmle
 
@@ -29,7 +30,7 @@ if (requireNamespace("emdbook")) {
                  start = list(h = 4, log_a = 2),
                  parameters = list(log_a ~ poly(random)), data = rfp
                  )
-
+    ## FIXME:: warnings about a>1; use logit link ???
     if (requireNamespace("bbmle")) {
       bbfit <- bbmle::mle2(form,
                            parameters = list(log_a ~ poly(random)),
