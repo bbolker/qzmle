@@ -13,8 +13,9 @@ make_makevars <- function() {
     file.create("~/.R/Makevars")
   }
   message("adding CXXFLAGS to .R/Makevars ...")
-  f <- file("~/.R/Makevars",open="a")
+  f <- file("~/.R/Makevars", open = "a")
   writeLines(c("CXXFLAGS += -Wno-ignored-attributes"),
-             con=f)
+    con = f
+  )
   close(f)
 }

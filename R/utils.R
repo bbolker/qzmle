@@ -1,45 +1,50 @@
 ## list of link to inverse link functions
-all_links <- c("logit"="invlogit(%s)",
-               "probit"="pnorm(%s)",
-               "cauchit"=NA,
-               "cloglog"=NA,
-               "identity"="%s",
-               "log"="exp(%s)",
-               "sqrt"="%s**2",
-               "1/mu^2"="1/sqrt(%s)",
-               "inverse"="(1/%s)")
+all_links <- c(
+  "logit" = "invlogit(%s)",
+  "probit" = "pnorm(%s)",
+  "cauchit" = NA,
+  "cloglog" = NA,
+  "identity" = "%s",
+  "log" = "exp(%s)",
+  "sqrt" = "%s**2",
+  "1/mu^2" = "1/sqrt(%s)",
+  "inverse" = "(1/%s)"
+)
 
 
 ## convert "plogis" into explicit logit function
 spot_plogis <- function(form) {
-  sub <- c("plogis"="exp(%s)/(1+exp(%s))")
+  sub <- c("plogis" = "exp(%s)/(1+exp(%s))")
   regex <- sprintf("%s", names(sub))
-  gsub(regex, "", form) }
+  gsub(regex, "", form)
+}
 
 
 ## used in mle.R
 ## make param name with link function prefix
 plinkfun <- function(pname, linkname) {
-  ifelse(linkname=="identity",pname,
-         paste(linkname, pname, sep="_"))
+  ifelse(linkname == "identity", pname,
+    paste(linkname, pname, sep = "_")
+  )
 }
 
 
 ## used in TMB.R
 ## get param names from "linkfun_pname"
 trans_parnames <- function(p) {
-  regex <- sprintf("(%s)_", paste(names(all_links),collapse="|"))
-  gsub(regex,"",p)
+  regex <- sprintf("(%s)_", paste(names(all_links), collapse = "|"))
+  gsub(regex, "", p)
 }
 
 ## submodels
-parameter_parse <- function(formula, data){
-  X <- model.matrix(formula, data=data)
+#' @importFrom stats model.matrix
+parameter_parse <- function(formula, data) {
+  X <- model.matrix(formula, data = data)
   return(X)
 }
 
-re_parameter_parse <- function(formula, data){
-  rt <- lme4::mkReTrms(formula, fr=data)
+re_parameter_parse <- function(formula, data) {
+  rt <- lme4::mkReTrms(formula, fr = data)
   Z <- Matrix::t(rt$Zt)
   return(Z)
 }
@@ -52,13 +57,17 @@ re_parameter_parse <- function(formula, data){
 ## try(check_fun("djunk"))
 ## rm(djunk)
 check_fun <- function(f) {
-    if (!exists(f)) stop("function: ",
-                          paste0(sQuote(f), " doesn't exist"))
-    ff <- formals(get(f))
-    if (names(ff)[1]!="x") stop("first argument should be 'x'")
-    if (!"log" %in% names(ff)) stop("function should have a 'log' argument")
-    return(TRUE)
-    }
+  if (!exists(f)) {
+    stop(
+      "function: ",
+      paste0(sQuote(f), " doesn't exist")
+    )
+  }
+  ff <- formals(get(f))
+  if (names(ff)[1] != "x") stop("first argument should be 'x'")
+  if (!"log" %in% names(ff)) stop("function should have a 'log' argument")
+  return(TRUE)
+}
 
 
 ## checks whether name starts with either a specific link
@@ -68,12 +77,13 @@ check_fun <- function(f) {
 ## detect_scale(c(log_a=1)) # "link"
 ## detect_scale(c(some_x=1)) # "response"
 ## detect_scale(c(log_a=1, some_x=1)) # "link" "response"
-detect_scale <- function(x, link=NULL) {
+detect_scale <- function(x, link = NULL) {
   links <- names(x)
-  regex <- sprintf("(%s)_", paste(names(all_links),collapse="|"))
-  ifelse(length(grep(regex, links))>0,
-         return("link"),
-         return("response"))
+  regex <- sprintf("(%s)_", paste(names(all_links), collapse = "|"))
+  ifelse(length(grep(regex, links)) > 0,
+    return("link"),
+    return("response")
+  )
 
   ## output a vector of link functions
   # s <- character(length(links))
@@ -97,25 +107,35 @@ detect_scale <- function(x, link=NULL) {
 ## x <- c(log_a=1)
 ## invlink(x)
 
-mklinkfun <- function(linkname, direction=c("linkfun","linkinv")) {
+mklinkfun <- function(linkname, direction = c("linkfun", "linkinv")) {
   direction <- match.arg(direction)
   m <- make.link(linkname)
-  f <-function(x) {
+  f <- function(x) {
     scale <- detect_scale(x)
 
-    if (direction=="linkfun"){
-      if (scale=="link"){
-        warning("applying link functions: ",
-                paste(dQuote(linkname), "to possible link-scaled parameter:",
-                      dQuote(names(x)), sep = " "))}
-      x_name <- paste0(linkname,"_", names(x))
+    if (direction == "linkfun") {
+      if (scale == "link") {
+        warning(
+          "applying link functions: ",
+          paste(dQuote(linkname), "to possible link-scaled parameter:",
+            dQuote(names(x)),
+            sep = " "
+          )
+        )
+      }
+      x_name <- paste0(linkname, "_", names(x))
     }
 
-    if (direction=="linkinv"){
-      if (scale=="response"){
-        warning("applying invlink functions: ",
-                paste(dQuote(linkname), "to possible not link-scaled parameter:",
-                      dQuote(names(x)), sep = " "))}
+    if (direction == "linkinv") {
+      if (scale == "response") {
+        warning(
+          "applying invlink functions: ",
+          paste(dQuote(linkname), "to possible not link-scaled parameter:",
+            dQuote(names(x)),
+            sep = " "
+          )
+        )
+      }
       x_name <- trans_parnames(names(x))
     }
 
@@ -128,49 +148,51 @@ mklinkfun <- function(linkname, direction=c("linkfun","linkinv")) {
 
 
 ## named variable val with variable name in a list (copied from lme4)
-named_list <- function (...)
-{
-    L <- list(...)
-    snm <- sapply(substitute(list(...)), deparse)[-1]
-    if (is.null(nm <- names(L)))
-        nm <- snm
-    if (any(nonames <- nm == ""))
-        nm[nonames] <- snm[nonames]
-    setNames(L, nm)
+named_list <- function(...) {
+  L <- list(...)
+  snm <- sapply(substitute(list(...)), deparse)[-1]
+  if (is.null(nm <- names(L))) {
+    nm <- snm
+  }
+  if (any(nonames <- nm == "")) {
+    nm[nonames] <- snm[nonames]
+  }
+  setNames(L, nm)
 }
 
 
 ## set name to object (copied from stats)
-setNames <- function (object = name, name)
-{
+setNames <- function(object = name, name) {
   names(object) <- name
   object
 }
 
 
 ## check if hessian is positive definite
-hessian_check <- function(x, tol=1e-08) {
-    eigenvalues <- eigen(x, only.values = TRUE)$values
-    n <- nrow(x)
-    for (i in 1:n) {
-        if (abs(eigenvalues[i]) < tol) {
-            eigenvalues[i] <- 0
-        }
+hessian_check <- function(x, tol = 1e-08) {
+  eigenvalues <- eigen(x, only.values = TRUE)$values
+  n <- nrow(x)
+  for (i in 1:n) {
+    if (abs(eigenvalues[i]) < tol) {
+      eigenvalues[i] <- 0
     }
-    if (any(eigenvalues <= 0)) {
-        return(FALSE)
-    }
-    return(TRUE)
+  }
+  if (any(eigenvalues <= 0)) {
+    return(FALSE)
+  }
+  return(TRUE)
 }
 
 ## formula utilities
 LHS_to_char <- function(f) as.character(f[[2]])
 RHS <- function(f) {
-    stopifnot(identical(f[[1]],quote(`~`))) ## should be a formula
-    return(f[[length(f)]])
+  stopifnot(identical(f[[1]], quote(`~`))) ## should be a formula
+  return(f[[length(f)]])
 }
 onesided_formula <- function(f) {
-    stopifnot(identical(f[[1]],quote(`~`))) ## should be a formula
-    if (length(f)==2) return(f) ## already one-sided
-    return(f[-2])
+  stopifnot(identical(f[[1]], quote(`~`))) ## should be a formula
+  if (length(f) == 2) {
+    return(f)
+  } ## already one-sided
+  return(f[-2])
 }

@@ -4,21 +4,31 @@
 \alias{mkfun}
 \title{Deriving the log-lik and gradients}
 \usage{
-mkfun(formula, data, links = NULL)
+mkfun(formula, start, links = NULL, parameters = NULL, data)
 }
 \arguments{
 \item{formula}{A formula in expression form of "y ~ model"}
 
-\item{data}{A list of parameter in the formula with values in vectors}
+\item{start}{A list of start values for formula parameters}
 
 \item{links}{Link function for each parameters}
+
+\item{parameters}{A list of linear submodels}
+
+\item{data}{A list of parameter in the formula with values in vectors}
 }
 \description{
 Deriving the log-lik and gradients
 }
 \examples{
 set.seed(101)
-dd <- data.frame(y=rpois(100,lambda=1))
-fun1 <- mkfun(y~dpois(exp(lambda)), data=dd)
-fun2 <- mkfun(y~dnorm(mean = b0 + b1 * latitude^2, sd = 1), data=dd)
+dd <- data.frame(y = rpois(100, lambda = 1))
+fun1 <- mkfun(y ~ dpois(exp(lambda)), start = list(lambda = 0), data = dd)
+fun2 <- mkfun(y ~ dnorm(mean = b0 + b1 * latitude^2, sd = 1), data = dd)
+rfp <- transform(emdbook::ReedfrogPred, nsize = as.numeric(size), random = rnorm(48))
+form <- surv ~ dbinom(size = density, prob = exp(log_a) / (1 + exp(log_a) * h * density))
+fun3 <- mkfun(form, start = list(h = 1, log_a = 0),
+                parameters = list(log_a ~ poly(nsize)), data = rfp)
+fun4 <- mkfun(form, start = list(h = 4, log_a = 2),
+                parameters = list(log_a ~ poly(random)), data = rfp)
 }
