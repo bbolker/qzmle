@@ -207,10 +207,6 @@ TMB_template <- function(formula, start,
 
     coefs <- coefs_text <- character(length(links))
 
-    browser()
-    ## FIXME:: making trans_coefs full length leads to bogus start entries
-    ## making it shorter (i.e. restricting this loop to non-identity links)
-    ##  leads to other problems
     trans_coefs <- rep(NA_character_, length(links))
     for (i in seq_along(links)) {
       ## e.g "log_a" -> "a"
