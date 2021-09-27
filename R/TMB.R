@@ -1,4 +1,4 @@
-#' Make model template to be compiled and return datalist
+#' Make model template to be compiled and return data list
 #' @name TMB_template
 #' @param formula A formula in expression form of "y ~ model"
 #' @param start A list of initial values for the parameters
@@ -10,55 +10,58 @@
 #' x <- runif(20, 1, 10)
 #' y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
 #' form <- y ~ dnorm(b0 + b1 * x, log_sigma)
-#' links <- c(b0="identity", b1="identity", sigma="log")
-#' start <- list(b0=1,b1=2, log_sigma=sd(y))
-#' TMB_template(form, start=start,links=links, data=list(x=x,y=y))
-#' ff <- TMB_mkfun(form, start=start,links=links, data=list(x=x,y=y))
+#' links <- c(b0 = "identity", b1 = "identity", sigma = "log")
+#' start <- list(b0 = 1, b1 = 2, log_sigma = sd(y))
+#' TMB_template(form, start = start, links = links, data = list(x = x, y = y))
+#' ff <- TMB_mkfun(form, start = start, links = links, data = list(x = x, y = y))
 #' ## submodel examples
 #' set.seed(101)
-#' rfp <- transform(emdbook::ReedfrogPred, nsize=as.numeric(size), random=rnorm(48))
-#' form <- surv ~ dbinom(size = density,prob = exp(log_a)/(1 + exp(log_a)*h*density))
-#' start <- list(h=1, log_a=c(2,0))
-#' links <- list(a="log")
-#' parameters <- list(log_a~poly(random))
-#' TMB_template(form, start=start,links=links, parameters=parameters, data=rfp)
+#' rfp <- transform(emdbook::ReedfrogPred, nsize = as.numeric(size), random = rnorm(48))
+#' form <- surv ~ dbinom(size = density, prob = exp(log_a) / (1 + exp(log_a) * h * density))
+#' start <- list(h = 1, log_a = c(2, 0))
+#' links <- list(a = "log")
+#' parameters <- list(log_a ~ poly(random))
+#' TMB_template(form, start = start, links = links, parameters = parameters, data = rfp)
 #' ## RE example with simulate data
-#' rfpsim <- expand.grid(density=1:20,block=factor(1:20))
+#' rfpsim <- expand.grid(density = 1:20, block = factor(1:20))
 #' true_logit_a <- -1
 #' true_log_h <- -1
-#' true_logit_a_sd <- 0.3  ## log(0.3) = -1.20
+#' true_logit_a_sd <- 0.3 ## log(0.3) = -1.20
 #' set.seed(101)
-#' logit_a_blk <- rnorm(20, mean=true_logit_a, sd=true_logit_a_sd)
+#' logit_a_blk <- rnorm(20, mean = true_logit_a, sd = true_logit_a_sd)
 #' a <- plogis(logit_a_blk[rfpsim$block])
-#' prob <- a/(1 + a*exp(true_log_h)*rfpsim$density)
-#' rfpsim$killed <- rbinom(nrow(rfpsim),size=rfpsim$density, prob=prob)
-#' form <- killed ~ dbinom(size = density,prob = plogis(logit_a)/(1 + plogis(logit_a)*exp(log_h)*density))
-#' parameters <- list(logit_a ~ 1 + (1|block))
-#' links <- list(a="logit", h="log")
-#' start <- list(logit_a=c(0), log_h=0)
-#' TMB_template(form, start=start,links=links, parameters=parameters, data=rfpsim)
+#' prob <- a / (1 + a * exp(true_log_h) * rfpsim$density)
+#' rfpsim$killed <- rbinom(nrow(rfpsim), size = rfpsim$density, prob = prob)
+#' form <- killed ~ dbinom(size = density,
+#'     prob = plogis(logit_a) / (1 + plogis(logit_a) * exp(log_h) * density))
+#' parameters <- list(logit_a ~ 1 + (1 | block))
+#' links <- list(a = "logit", h = "log")
+#' start <- list(logit_a = c(0), log_h = 0)
+#' TMB_template(form, start = start, links = links, parameters = parameters, data = rfpsim)
 #' @importFrom lme4 nobars findbars mkReTrms
 #' @importFrom Matrix t
-
-TMB_template <- function(formula,start,
-                         links=NULL,
-                         parameters=NULL,
-                         data=NULL) {
+#' @export
+TMB_template <- function(formula, start,
+                         links = NULL,
+                         parameters = NULL,
+                         data = NULL) {
 
   ## add data vectors
   if (!is.null(data)) {
     ## parse data in formula
-    data_vars <- setdiff(all.vars(formula),
-                         c(names(links), names(start), names(parameters)))
+    data_vars <- setdiff(
+      all.vars(formula),
+      c(names(links), names(start), names(parameters))
+    )
 
     data_vec <- character(length(data_vars))
     ## check data
     for (i in seq_along(data_vars)) {
-        if (is.character(data$data_vars[i])) {
-            stop("Cannot process string data")
-        }
-        ## store data vectors
-        data_vec[i] <- sprintf("DATA_VECTOR(%s); \n", data_vars[i])
+      if (is.character(data$data_vars[i])) {
+        stop("Cannot process string data")
+      }
+      ## store data vectors
+      data_vec[i] <- sprintf("DATA_VECTOR(%s); \n", data_vars[i])
     }
   }
 
@@ -69,42 +72,42 @@ TMB_template <- function(formula,start,
   arglist <- as.list(RHS(formula)[-1])
   ## unname(sapply(arglist, deparse))
 
+  ## stubs for submodel vars
+  Xlist <- Zlist <- NULL
+  submodel_vars <- prec <- pvec <- NULL
+  re_data <- re_param <- re_eq <- re_param_vec <-
+    re_sdname <- re_rand <- nll_pen <- NULL
+
   ## submodels
-  if(!missing(parameters)) {
+  if (!missing(parameters)) {
     ## setting up submodels
-    submodel_vars <- vapply(parameters,LHS_to_char,FUN.VALUE=character(1))
+    submodel_vars <- vapply(parameters, LHS_to_char, FUN.VALUE = character(1))
     submodel_RHS <- sapply(parameters, onesided_formula)
     fixed_terms <- sapply(submodel_RHS, lme4::nobars)
     random_terms <- lapply(submodel_RHS, lme4::findbars)
 
     ## X matrix for fixed effects
-    Xlist <- lapply(fixed_terms,parameter_parse, data=data)
+    Xlist <- lapply(fixed_terms, parameter_parse, data = data)
     names(Xlist) <- submodel_vars
     ## make sure start values of parameters in the same order as the Xlist
     pvec <- start[submodel_vars]
-  } else {
-    submodel_vars <- NULL # starting values for submodel parameters
-    pvec <- NULL # variables with submodel
-  }
-
 
   ## Setting up random terms
   if (!all(sapply(random_terms, is.null))) {
-
     names(random_terms) <- submodel_vars
     random_terms <- unlist(random_terms[which(!is.null(random_terms))])
 
     ## only allow random intercept for now
     rand_int <- sapply(random_terms, "[[", 2)
-    if (!all(rand_int==1)) stop("can only implement random intercept for now")
+    if (!all(rand_int == 1)) stop("can only implement random intercept for now")
 
     ## set up random param
     Zlist <- re_rand_val <- vector(mode = "list", length = length(random_terms))
     re_param <- re_param_vec <- re_data <- re_eq <- nll_pen <- character(length(random_terms))
     re_sd <- numeric(length(random_terms))
 
-    for (i in seq_along(random_terms)){
-      Zlist[[i]] <- re_parameter_parse(list(random_terms[[i]]), data=data)
+    for (i in seq_along(random_terms)) {
+      Zlist[[i]] <- re_parameter_parse(list(random_terms[[i]]), data = data)
       Z_pname <- paste0("Z_", names(random_terms)[i])
       names(Zlist)[i] <- Z_pname
       re_data[i] <- sprintf("DATA_SPARSE_MATRIX(%s); \n", Z_pname)
@@ -123,21 +126,23 @@ TMB_template <- function(formula,start,
       re_param_vec[i] <- sprintf("PARAMETER_VECTOR(%s); \n", re_rand)
 
       ## add random effect on predictor
-      re_eq[i] <- sprintf("%s += exp(%s) * (%s * %s);\n", names(random_terms)[i],
-                          re_sdname, Z_pname, re_rand)
+      re_eq[i] <- sprintf(
+        "%s += exp(%s) * (%s * %s);\n", names(random_terms)[i],
+        re_sdname, Z_pname, re_rand
+      )
 
       ## penalization on nll
       nll_pen[i] <- sprintf("nll -= sum(dnorm(%s, Type(0), Type(1), true));\n", re_rand)
     }
-  } else {re_data <- re_param <- re_eq <- re_param_vec <- re_rand <- re_sdname <- nll_pen <- Zlist <- NULL}
-
-  ##FIXME: re_rand should be vector
+  }
+  } ## if parameters (submodels) specified
+  ## FIXME: re_rand should be vector
 
   ## if missing start arguments, use the named argument as the first element,
   ## all other elements of the sub-model parameter vector are 0
-  for(i in submodel_vars){
+  for (i in submodel_vars) {
     n_missed <- ncol(Xlist[[i]]) - length(pvec[[i]])
-    if (n_missed < 0) stop('Too many argments in start for parameter: ', sQuote(i))
+    if (n_missed < 0) stop("Too many arguments in start for parameter: ", sQuote(i))
     if (n_missed != 0) pvec[[i]] <- c(pvec[[i]], rep(0, n_missed))
     ## add sub model parameter names
     names(pvec[[i]]) <- colnames(Xlist[[i]])
@@ -155,17 +160,19 @@ TMB_template <- function(formula,start,
       pname_param <- paste0(names(start)[i], "_param")
       start_pname[i] <- pname_param
       params[i] <- sprintf("PARAMETER_VECTOR(%s); \n", pname_param)
-    } else{
+    } else {
       start_pname[i] <- names(start)[i]
       params[i] <- sprintf("PARAMETER(%s); \n", names(start)[i])
     }
 
-    ## submodel data and parametrization
+    ## submodel data and parameterization
     if (names(start)[i] %in% submodel_vars) {
       X_pname <- paste0("X_", names(start)[i])
       submodel_data_text[i] <- sprintf("DATA_MATRIX(%s); \n", X_pname)
-      submodel_eq[i] <- sprintf("vector <Type> %s = %s * %s; \n",
-                                names(start)[i], X_pname[i], pname_param[i])
+      submodel_eq[i] <- sprintf(
+        "vector <Type> %s = %s * %s; \n",
+        names(start)[i], X_pname[i], pname_param[i]
+      )
     }
   }
 
@@ -173,12 +180,12 @@ TMB_template <- function(formula,start,
   #   links <- character(length(start))
   # }
 
-  ## store all coefficents with linkfun
+  ## store all coefficients with linkfun
   ## vars names changed to link_varnames
-  if (!is.null(links)){
+  if (!is.null(links)) {
     ## check if user place the same parameter as link function
-    if(all(trans_parnames(names(start))==names(start))) {
-      stop("parameter name in `start` should be in linkscale")
+    if (all(trans_parnames(names(start)) == names(start))) {
+      stop("parameter name in `start` should be in link scale")
 
       ## FIXME: automatically change name?? necessary??
       # link_ind <- which(names(start) %in% names(links))
@@ -190,7 +197,7 @@ TMB_template <- function(formula,start,
     }
 
     ## if no links, add identity links
-    if(length(links) != length(start)){
+    if (length(links) != length(start)) {
       pnames <- start[!trans_parnames(names(start)) %in% names(links)]
       ilinks <- rep(list("identity"), length(pnames))
       names(ilinks) <- names(pnames)
@@ -199,83 +206,96 @@ TMB_template <- function(formula,start,
     }
 
     coefs <- coefs_text <- character(length(links))
-    trans_coefs <- character(length(links[links!="identity"]))
-    for(i in seq_along(links)) {
+
+    trans_coefs <- rep(NA_character_, length(links))
+    for (i in seq_along(links)) {
       ## e.g "log_a" -> "a"
       coefs[i] <- trans_parnames(names(start)[i])
       ## filters out identity links (e.g. start has "log_a", a" is not in start)
       # links <- links[links!="identity"]
-      if(!(coefs[i] %in% names(start))){
-          coefs_len <- length(unlist(start[plinkfun(coefs[i], links[coefs[i]])]))
-          link_pname <- sprintf(all_links[[links[[i]]]], names(start)[i])
-          ## check if parameter with link is vector
-          if ((coefs_len > 1) || (names(start)[i] %in% submodel_vars)){
-            coefs_text[i] <- sprintf("vector <Type> %s = %s; \n", coefs[i], link_pname)
-          } else{
-            coefs_text[i] <- sprintf("Type %s = %s; \n", coefs[i], link_pname)
-          }
-          trans_coefs[i] <- link_pname
-          names(trans_coefs)[i] <- coefs[i]
-          ## incase it is logit
-          trans_coefs[i] <- gsub("invlogit", "plogis", trans_coefs[i])
+      if (!(coefs[i] %in% names(start))) {
+        coefs_len <- length(unlist(start[plinkfun(coefs[i], links[coefs[i]])]))
+        link_pname <- sprintf(all_links[[links[[i]]]], names(start)[i])
+        ## check if parameter with link is vector
+        if ((coefs_len > 1) || (names(start)[i] %in% submodel_vars)) {
+          coefs_text[i] <- sprintf("vector <Type> %s = %s; \n", coefs[i], link_pname)
+        } else {
+          coefs_text[i] <- sprintf("Type %s = %s; \n", coefs[i], link_pname)
         }
+        trans_coefs[i] <- link_pname
+        names(trans_coefs)[i] <- coefs[i]
+        ## in case it is logit
+        trans_coefs[i] <- gsub("invlogit", "plogis", trans_coefs[i])
+      }
     }
   }
-
+  trans_coefs <- trans_coefs[!is.na(trans_coefs)]
 
   ## make sure to vectorize parameter when needed
-  for (i in seq_along(arglist)){
-    if (length(grep(submodel_vars, arglist[[i]])) > 0) {
-      arglist[[i]] <- sprintf("vector<Type>(%s)", deparse(arglist[[i]]))
+  if (!is.null(submodel_vars)) {
+    for (i in seq_along(arglist)) {
+      if (length(grep(submodel_vars, arglist[[i]])) > 0) {
+        arglist[[i]] <- sprintf("vector<Type>(%s)", deparse(arglist[[i]]))
+      }
     }
   }
 
   ## substitute transformed parameter without link name
-  for (i in seq_along(trans_coefs)){
-    arglist <- gsub(trans_coefs[[i]], names(trans_coefs)[i], arglist, fixed = T)
+  for (i in seq_along(trans_coefs)) {
+    arglist <- gsub(trans_coefs[[i]], names(trans_coefs)[i], arglist, fixed = TRUE)
   }
 
 
   ## cpp script
   header <- "#include <TMB.hpp> \ntemplate<class Type> \nType objective_function<Type>::operator() () { \n"
 
-  nll <- sprintf("Type nll = 0.0;\nnll -= sum(%s(%s, %s, true));\n",
-                 as.character(RHS[[1]]), as.character(y), paste(arglist, collapse = ','))
+  nll <- sprintf(
+    "Type nll = 0.0;\nnll -= sum(%s(%s, %s, true));\n",
+    as.character(RHS[[1]]), as.character(y), paste(arglist, collapse = ",")
+  )
 
   return_text <- "\nreturn nll;}\n"
 
-  model <- paste0(header,
-                  paste(data_vec, collapse=''), ## data vectors
-                  paste(submodel_data_text, collapse = ''), ## model matrix
-                  paste(re_data, collapse = ''), ## sparse matrix
-                  paste(params, collapse=''), ## parameters
-                  paste(re_param_vec, collapse = ''), ## random parameter
-                  paste(re_param, collapse = ''), ## random sd
-                  paste(submodel_eq, collapse = ''), ## submodel parametrization
-                  paste(re_eq, collapse = ''), ## add r.e to predictor
-                  paste(coefs_text, collapse=''), ## linkfun
-                  nll, nll_pen, return_text)
+  model <- paste0(
+    header,
+    paste(data_vec, collapse = ""), ## data vectors
+    paste(submodel_data_text, collapse = ""), ## model matrix
+    paste(re_data, collapse = ""), ## sparse matrix
+    paste(params, collapse = ""), ## parameters
+    paste(re_param_vec, collapse = ""), ## random parameter
+    paste(re_param, collapse = ""), ## random sd
+    paste(submodel_eq, collapse = ""), ## submodel parameterization
+    paste(re_eq, collapse = ""), ## add r.e to predictor
+    paste(coefs_text, collapse = ""), ## linkfun
+    nll, nll_pen, return_text
+  )
 
-  ##return(model)
-  write(model, file='template.cpp')
+  ## return(model)
+  write(model, file = "template.cpp")
 
   ## return list of data
   data_list <- list()
-  for (i in data_vars){
+  for (i in data_vars) {
     data_list[[i]] <- data[[i]]
   }
   names(start) <- start_pname
   start <- sapply(start, unname)
   int_n <- length(start)
-  ##re_rand
-  re_sd=list(rep(0, 20))
-  start <- c(start, res_sdname=re_sd, re_rand=0)
-  names(start) <- c(names(start)[1:int_n],re_rand, re_sdname)
 
-  names(Xlist) <- X_pname
+  ## FIXME: this was clearly messed with to make something work.
+  ##  doesn't work in general!
+  ## re_rand
+
+  ## if RE models exist, then ... ?
+
+  re_sd <- list(rep(0, 20))
+  start <- c(start, res_sdname = re_sd, re_rand = 0)
+  names(start) <- c(names(start)[1:int_n], re_rand, re_sdname)
+
+  if (!is.null(Xlist)) names(Xlist) <- X_pname
   data_list <- c(data_list, Xlist, Zlist, named_list(re_rand))
 
-  return(list(data=data_list, start=start))
+  return(list(data = data_list, start = start))
 }
 
 
@@ -286,17 +306,18 @@ TMB_template <- function(formula,start,
 #' @param start A list of initial values for the parameters
 #' @param data A list of parameter in the formula with values in vectors
 #' @param links links function and the model parameter
+#' @param parameters ??
 #' @importFrom TMB compile dynlib MakeADFun
 
-TMB_mkfun <- function(formula,start, links=NULL, parameters=NULL, data){
-  data_list <- TMB_template(formula,start,links, parameters, data)
+TMB_mkfun <- function(formula, start, links = NULL, parameters = NULL, data) {
+  data_list <- TMB_template(formula, start, links, parameters, data)
   TMB::compile("template.cpp")
   dyn.load(TMB::dynlib("template"))
-  obj_fun <- MakeADFun(data=data_list$data, parameters= data_list$start, silent = T,
-                       DLL="template",
-                       random=data_list$re_rand
-                       )
+  obj_fun <- MakeADFun(
+    data = data_list$data, parameters = data_list$start, silent = T,
+    DLL = "template",
+    random = data_list$re_rand
+  )
   obj_fun <- c(obj_fun, start = list(data_list$start))
   return(obj_fun)
 }
-

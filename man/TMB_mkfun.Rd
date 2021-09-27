@@ -4,16 +4,18 @@
 \alias{TMB_mkfun}
 \title{Compiles template and create nll and gradient}
 \usage{
-TMB_mkfun(formula, parameter, data = NULL, link = NULL)
+TMB_mkfun(formula, start, links = NULL, parameters = NULL, data)
 }
 \arguments{
-\item{parameter}{A list of initial values for the parameters}
+\item{formula}{A formula in expression form of "y ~ model"}
+
+\item{start}{A list of initial values for the parameters}
+
+\item{links}{links function and the model parameter}
+
+\item{parameters}{??}
 
 \item{data}{A list of parameter in the formula with values in vectors}
-
-\item{link}{link function and the model parameter}
-
-\item{form}{A formula in expression form of "y ~ model"}
 }
 \description{
 compiles template and create nll and gradient

@@ -2,30 +2,55 @@
 % Please edit documentation in R/TMB.R
 \name{TMB_template}
 \alias{TMB_template}
-\title{Make model template to be compiled}
+\title{Make model template to be compiled and return datalist}
 \usage{
-TMB_template(formula, parameter, data = NULL, link = NULL)
+TMB_template(formula, start, links = NULL, parameters = NULL, data = NULL)
 }
 \arguments{
-\item{parameter}{A list of initial values for the parameters}
+\item{formula}{A formula in expression form of "y ~ model"}
+
+\item{start}{A list of initial values for the parameters}
+
+\item{links}{link function and the model parameter}
+
+\item{parameters}{A list of linear submodels and random effects}
 
 \item{data}{A list of parameter in the formula with values in vectors}
-
-\item{link}{link function and the model parameter}
-
-\item{form}{A formula in expression form of "y ~ model"}
 }
 \description{
-Make model template to be compiled
+Make model template to be compiled and return datalist
 }
 \examples{
 set.seed(123)
 x <- runif(20, 1, 10)
 y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
 form <- y ~ dnorm(b0 + b1 * x, log_sigma)
-links <- list(sigma="log")
-TMB_template(form, parameter=list(b0=1,b1=2, log_sigma=sd(y)),
-data=list(x=x,y=y),link=c(b0="identity", b1="identity", sigma="log"))
-ff <- TMB_mkfun(form, parameter=list(b0=1,b1=2, log_sigma=sd(y)),
-data=list(x=x,y=y),link=c(b0="identity", b1="identity", sigma="log"))
+links <- c(b0 = "identity", b1 = "identity", sigma = "log")
+start <- list(b0 = 1, b1 = 2, log_sigma = sd(y))
+TMB_template(form, start = start, links = links, data = list(x = x, y = y))
+ff <- TMB_mkfun(form, start = start, links = links, data = list(x = x, y = y))
+## submodel examples
+set.seed(101)
+rfp <- transform(emdbook::ReedfrogPred, nsize = as.numeric(size), random = rnorm(48))
+form <- surv ~ dbinom(size = density, prob = exp(log_a) / (1 + exp(log_a) * h * density))
+start <- list(h = 1, log_a = c(2, 0))
+links <- list(a = "log")
+parameters <- list(log_a ~ poly(random))
+TMB_template(form, start = start, links = links, parameters = parameters, data = rfp)
+## RE example with simulate data
+rfpsim <- expand.grid(density = 1:20, block = factor(1:20))
+true_logit_a <- -1
+true_log_h <- -1
+true_logit_a_sd <- 0.3 ## log(0.3) = -1.20
+set.seed(101)
+logit_a_blk <- rnorm(20, mean = true_logit_a, sd = true_logit_a_sd)
+a <- plogis(logit_a_blk[rfpsim$block])
+prob <- a / (1 + a * exp(true_log_h) * rfpsim$density)
+rfpsim$killed <- rbinom(nrow(rfpsim), size = rfpsim$density, prob = prob)
+form <- killed ~ dbinom(size = density,
+    prob = plogis(logit_a) / (1 + plogis(logit_a) * exp(log_h) * density))
+parameters <- list(logit_a ~ 1 + (1 | block))
+links <- list(a = "logit", h = "log")
+start <- list(logit_a = c(0), log_h = 0)
+TMB_template(form, start = start, links = links, parameters = parameters, data = rfpsim)
 }
