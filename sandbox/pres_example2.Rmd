@@ -19,10 +19,9 @@ logit_a_blk <- rnorm(20, mean=true_logit_a, sd=true_logit_a_sd)
 a <- plogis(logit_a_blk[rfpsim$block])
 prob <- a/(1 + a*exp(true_log_h)*rfpsim$density)
 rfpsim$killed <- rbinom(nrow(rfpsim),size=rfpsim$density, prob=prob)
+
 form <- killed ~ dbinom(size = density,prob = plogis(logit_a)/(1 +plogis(logit_a)*exp(log_h)*density))
-parameters <- list(logit_a ~ 1 + (1|block))
-links <- list(a="logit", h="log")
-start <- 
+
 library(qzmle)
 qzmle::mle(form, 
            start=list(logit_a=c(0), log_h=0),

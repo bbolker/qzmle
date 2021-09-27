@@ -1,7 +1,9 @@
 ---
 title: "a markdown file with citations"
+output: 
+  pdf_document:
+    latex_engine: xelatex
 bibliography: tmp.bib
-output: pdf_document
 ---
 
 1. Save refs to BibTeX, maybe via Zotero ("Export"/"BibTeX") or CTRL-SHIFT-C

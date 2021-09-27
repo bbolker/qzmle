@@ -129,7 +129,7 @@ TMB_template <- function(formula,start,
       ## penalization on nll
       nll_pen[i] <- sprintf("nll -= sum(dnorm(%s, Type(0), Type(1), true));\n", re_rand)
     }
-  } else {re_data <- re_param <- re_eq <- re_param_vec <- re_rand <- nll_pen <- NULL}
+  } else {re_data <- re_param <- re_eq <- re_param_vec <- re_rand <- re_sdname <- nll_pen <- Zlist <- NULL}
 
   ##FIXME: re_rand should be vector
 
