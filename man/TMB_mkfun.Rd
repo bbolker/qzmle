@@ -13,7 +13,15 @@ TMB_mkfun(formula, start, links = NULL, parameters = NULL, data)
 
 \item{links}{links function and the model parameter}
 
-\item{parameters}{??}
+\item{parameters}{A list of linear submodels and random effects
+set.seed(123)
+x <- runif(20, 1, 10)
+y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
+form <- y ~ dnorm(b0 + b1 * x, log_sigma)
+links <- c(b0 = "identity", b1 = "identity", sigma = "log")
+start <- list(b0 = 1, b1 = 2, log_sigma = sd(y))
+TMB_template(form, start = start, links = links, data = list(x = x, y = y))
+ff <- TMB_mkfun(form, start = start, links = links, data = list(x = x, y = y))}
 
 \item{data}{A list of parameter in the formula with values in vectors}
 }

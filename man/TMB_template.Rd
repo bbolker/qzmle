@@ -2,7 +2,7 @@
 % Please edit documentation in R/TMB.R
 \name{TMB_template}
 \alias{TMB_template}
-\title{Make model template to be compiled and return datalist}
+\title{Make model template to be compiled and return data list}
 \usage{
 TMB_template(formula, start, links = NULL, parameters = NULL, data = NULL)
 }
@@ -18,17 +18,9 @@ TMB_template(formula, start, links = NULL, parameters = NULL, data = NULL)
 \item{data}{A list of parameter in the formula with values in vectors}
 }
 \description{
-Make model template to be compiled and return datalist
+Make model template to be compiled and return data list
 }
 \examples{
-set.seed(123)
-x <- runif(20, 1, 10)
-y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
-form <- y ~ dnorm(b0 + b1 * x, log_sigma)
-links <- c(b0 = "identity", b1 = "identity", sigma = "log")
-start <- list(b0 = 1, b1 = 2, log_sigma = sd(y))
-TMB_template(form, start = start, links = links, data = list(x = x, y = y))
-ff <- TMB_mkfun(form, start = start, links = links, data = list(x = x, y = y))
 ## submodel examples
 set.seed(101)
 rfp <- transform(emdbook::ReedfrogPred, nsize = as.numeric(size), random = rnorm(48))
