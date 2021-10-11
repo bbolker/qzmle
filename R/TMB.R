@@ -11,18 +11,19 @@
 #' y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
 #' form <- y ~ dnorm(b0 + b1 * x, log_sigma)
 #' links <- c(b0 = "identity", b1 = "identity", sigma = "log")
-#' start <- list(b0 = 1, b1 = 2, log_sigma = sd(y))
+#' start <- list(b0 = 1, b1 = 2, log_sigma = log(sd(y)))
 #' TMB_template(form, start = start, links = links, data = list(x = x, y = y))
 #' ff <- TMB_mkfun(form, start = start, links = links, data = list(x = x, y = y))
 #' @importFrom TMB compile dynlib MakeADFun
-
+#' @export
 TMB_mkfun <- function(formula, start, links = NULL, parameters = NULL, data) {
   data_list <- TMB_template(formula, start, links, parameters, data)
   TMB::compile("template.cpp")
   dyn.load(TMB::dynlib("template"))
   obj_fun <- MakeADFun(
     data = data_list$data[names(data_list$data) != "re_rand"],
-    parameters = data_list$start, silent = T,
+    parameters = data_list$start,
+    silent = TRUE,
     DLL = "template",
     random = data_list$data$re_rand
   )
@@ -106,7 +107,7 @@ TMB_template <- function(formula, start,
     re_sdname <- re_rand <- nll_pen <- NULL
 
   ## submodels
-  if (!missing(parameters)) {
+  if (length(parameters)>0) {
     ## setting up submodels
     submodel_vars <- vapply(parameters, LHS_to_char, FUN.VALUE = character(1))
     submodel_RHS <- sapply(parameters, onesided_formula)
