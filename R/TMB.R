@@ -14,7 +14,6 @@
 #' start <- list(b0 = 1, b1 = 2, log_sigma = sd(y))
 #' TMB_template(form, start = start, links = links, data = list(x = x, y = y))
 #' ff <- TMB_mkfun(form, start = start, links = links, data = list(x = x, y = y))
-#'
 #' @importFrom TMB compile dynlib MakeADFun
 
 TMB_mkfun <- function(formula, start, links = NULL, parameters = NULL, data) {
@@ -22,11 +21,13 @@ TMB_mkfun <- function(formula, start, links = NULL, parameters = NULL, data) {
   TMB::compile("template.cpp")
   dyn.load(TMB::dynlib("template"))
   obj_fun <- MakeADFun(
-    data = data_list$data, parameters = data_list$start, silent = T,
+    data = data_list$data[names(data_list$data) != "re_rand"],
+    parameters = data_list$start, silent = T,
     DLL = "template",
-    random = data_list$re_rand
+    random = data_list$data$re_rand
   )
-  obj_fun <- c(obj_fun, start = list(data_list$start))
+  obj_fun <- c(obj_fun,
+               start = list(data_list$start[!is.na(names(data_list$start))]))
   return(obj_fun)
 }
 
