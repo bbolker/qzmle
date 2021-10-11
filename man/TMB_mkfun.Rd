@@ -21,8 +21,7 @@ form <- y ~ dnorm(b0 + b1 * x, log_sigma)
 links <- c(b0 = "identity", b1 = "identity", sigma = "log")
 start <- list(b0 = 1, b1 = 2, log_sigma = log(sd(y)))
 TMB_template(form, start = start, links = links, data = list(x = x, y = y))
-ff <- TMB_mkfun(form, start = start, links = links, data = list(x = x, y= y))
-}
+ff <- TMB_mkfun(form, start = start, links = links, data = list(x = x, y = y))}
 
 \item{data}{A list of parameter in the formula with values in vectors}
 }
