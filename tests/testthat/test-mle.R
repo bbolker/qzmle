@@ -60,4 +60,32 @@ if (requireNamespace("emdbook")) {
 } ## emdbook available
 
 
+set.seed(1001)
+lymax <- c(0,2)
+lhalf <- 0
+x <- sort(runif(200))
+g <- factor(sample(c("a","b"),200,replace=TRUE))
+y <- rnbinom(200,mu=exp(lymax[g])/(1+x/exp(lhalf)),size=2)
+d2 <- data.frame(x,g,y)
+
+test_that("Negative Binomial works", {
+
+  fit3qz <- qzmle::mle(y~dnbinom(mu=exp(lymax)/(1+x/exp(lhalf)),
+                                 size=exp(logk)),
+                       parameters=list(lymax~g), data=d2,
+                       start=list(lymax=0,lhalf=0,logk=0))
+
+  if (requireNamespace("bbmle")) {
+    fit3bb <- mle2(y~dnbinom(mu=exp(lymax)/(1+x/exp(lhalf)),size=exp(logk)),
+                   parameters=list(lymax~g),data=d2,
+                   start=list(lymax=0,lhalf=0,logk=0))
+  }
+  expect_equal(bbmle::coef(fit3bb), coef(fit3qz), tolerance = 1e-6)
+  }
+  )
+
+
+
+
+
 
