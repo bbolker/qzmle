@@ -1,39 +1,3 @@
-#' Compiles template and create nll and gradient
-#' @name TMB_mkfun
-#' @description compiles template and create nll and gradient
-#' @param formula A formula in expression form of "y ~ model"
-#' @param start A list of initial values for the parameters
-#' @param data A list of parameter in the formula with values in vectors
-#' @param links links function and the model parameter
-#' @param parameters A list of linear submodels and random effects
-#' set.seed(123)
-#' x <- runif(20, 1, 10)
-#' y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
-#' form <- y ~ dnorm(b0 + b1 * x, log_sigma)
-#' links <- c(b0 = "identity", b1 = "identity", sigma = "log")
-#' start <- list(b0 = 1, b1 = 2, log_sigma = log(sd(y)))
-#' TMB_template(form, start = start, links = links, data = list(x = x, y = y))
-#' ff <- TMB_mkfun(form, start = start, links = links, data = list(x = x, y = y))
-#' @importFrom TMB compile dynlib MakeADFun
-#' @export
-TMB_mkfun <- function(formula, start, links = NULL, parameters = NULL, data) {
-  data_list <- TMB_template(formula, start, links, parameters, data)
-  TMB::compile("template.cpp")
-  dyn.load(TMB::dynlib("template"))
-  obj_fun <- MakeADFun(
-    data = data_list$data[names(data_list$data) != "re_rand"],
-    parameters = data_list$start,
-    silent = TRUE,
-    DLL = "template",
-    random = data_list$data$re_rand
-  )
-  obj_fun <- c(obj_fun,
-               start = list(data_list$start[!is.na(names(data_list$start))]))
-  return(obj_fun)
-}
-
-
-
 #' Make model template to be compiled and return data list
 #' @name TMB_template
 #' @param formula A formula in expression form of "y ~ model"
@@ -223,9 +187,10 @@ TMB_template <- function(formula, start,
       ## change start names
       # names(start) <- `[<-`(names(start), link_ind, )
     }
+  }
 
     ## if no links, add identity links
-    if (length(links) != length(start)) {
+  if (length(links) != length(start)) {
       pnames <- start[!trans_parnames(names(start)) %in% names(links)]
       ilinks <- rep(list("identity"), length(pnames))
       names(ilinks) <- names(pnames)
@@ -233,10 +198,10 @@ TMB_template <- function(formula, start,
       links <- links[trans_parnames(names(start))]
     }
 
-    coefs <- coefs_text <- character(length(links))
+  coefs <- coefs_text <- character(length(links))
 
-    trans_coefs <- rep(NA_character_, length(links))
-    for (i in seq_along(links)) {
+  trans_coefs <- rep(NA_character_, length(links))
+  for (i in seq_along(links)) {
       ## e.g "log_a" -> "a"
       coefs[i] <- trans_parnames(names(start)[i])
       ## filters out identity links (e.g. start has "log_a", a" is not in start)
@@ -256,7 +221,6 @@ TMB_template <- function(formula, start,
         trans_coefs[i] <- gsub("invlogit", "plogis", trans_coefs[i])
       }
     }
-  }
   trans_coefs <- trans_coefs[!is.na(trans_coefs)]
 
   ## make sure to vectorize parameter when needed
@@ -327,4 +291,38 @@ TMB_template <- function(formula, start,
 }
 
 
+
+#' Compiles template and create nll and gradient
+#' @name TMB_mkfun
+#' @description compiles template and create nll and gradient
+#' @param formula A formula in expression form of "y ~ model"
+#' @param start A list of initial values for the parameters
+#' @param data A list of parameter in the formula with values in vectors
+#' @param links links function and the model parameter
+#' @param parameters A list of linear submodels and random effects
+#' set.seed(123)
+#' x <- runif(20, 1, 10)
+#' y <- rnorm(20, mean = 1.8 + 2.4 * x, sd = exp(0.3))
+#' form <- y ~ dnorm(b0 + b1 * x, log_sigma)
+#' links <- c(b0 = "identity", b1 = "identity", sigma = "log")
+#' start <- list(b0 = 1, b1 = 2, log_sigma = log(sd(y)))
+#' TMB_template(form, start = start, links = links, data = list(x = x, y = y))
+#' ff <- TMB_mkfun(form, start = start, links = links, data = list(x = x, y = y))
+#' @importFrom TMB compile dynlib MakeADFun
+#' @export
+TMB_mkfun <- function(formula, start, links = NULL, parameters = NULL, data) {
+  data_list <- TMB_template(formula, start, links, parameters, data)
+  TMB::compile("template.cpp")
+  dyn.load(TMB::dynlib("template"))
+  obj_fun <- MakeADFun(
+    data = data_list$data[names(data_list$data) != "re_rand"],
+    parameters = data_list$start,
+    silent = TRUE,
+    DLL = "template",
+    random = data_list$data$re_rand
+  )
+  obj_fun <- c(obj_fun,
+               start = list(data_list$start[!is.na(names(data_list$start))]))
+  return(obj_fun)
+}
 

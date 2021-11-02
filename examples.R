@@ -19,8 +19,11 @@ fitqz <- qzmle::mle(LL) ## missing data ...
 ## with variables taken from the global environment
 ## (b) Add an issue to possibly implement this ...
 ## There's a legitimate argument for **not** implementing this.
+## (Because parameters and data are grouped before passing to optim)
 
-## TASK 2. (a) Document that qzmle::mle() doesn't work with user-specified NLL functions. (b) Add an issue to implement this.
+## TASK 2.
+## (a) Document that qzmle::mle() doesn't work with user-specified NLL functions.
+## (b) Add an issue to implement this.
 fit <- mle2(LL, data=d)
 fitqz <- qzmle::mle(LL, data = d)
 
@@ -28,7 +31,8 @@ fit0 <- mle2(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
 fit0qz <- qzmle::mle(y~dpois(lambda=ymean),
                      start=list(ymean=mean(d$y)),
                      data=d)
-optimHess(coef(fit0qz), fn = fit0qz$minuslogl)
+## Cant put minuslogl inside bc minuslogl = opt$value
+##optimHess(coef(fit0qz), fn = fit0qz$minuslogl)
 all.equal(coef(fit0), coef(fit0qz))
 all.equal(vcov(fit0), vcov(fit0qz), tol=1e-5)
 ## TASK: return the negative log-likelihood _function_ as one component of a fitted mle object.
@@ -54,9 +58,17 @@ all.equal(vcov(fit0), vcov(fit0qz), tol=1e-5)
 ## class "logLik" ...
 
 ## anova(fit0,fit)
-summary(fit)
-logLik(fit)
-vcov(fit)
+summary(fit0)
+logLik(fit0)
+vcov(fit0)
+
+summary(fit0qz)
+logLik(fit0qz)
+vcov(fit0qz)
+## Able to assign to variable
+temp <- vcov(fit0qz)
+temp <- logLik(fit0qz)
+
 
 fit1qz <- qzmle::mle(y~dpois(lambda=exp(lymax)/(1+x/exp(lhalf))),
       start=list(lymax=0,lhalf=0),
@@ -91,8 +103,10 @@ fit3bb <- mle2(y~dnbinom(mu=exp(lymax)/(1+x/exp(lhalf)),size=exp(logk)),
              parameters=list(lymax~g),data=d2,
              start=list(lymax=0,lhalf=0,logk=0))
 
-## FIXME!
 fit3qz <- qzmle::mle(y~dnbinom(mu=exp(lymax)/(1+x/exp(lhalf)),
                                size=exp(logk)),
                      parameters=list(lymax~g), data=d2,
                      start=list(lymax=0,lhalf=0,logk=0))
+
+compare(coef(fit3bb), coef(fit3qz))
+

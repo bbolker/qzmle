@@ -15,7 +15,14 @@ loglik_list <- list(
         - (x - mean)^2 / (2 * sd^2)
     ),
     params = c("mean", "sd")
-  )
+    ),
+  dnbinom = list(
+    ## gamma(x+size)/ (gamma(size)*factorial(x)) * prob^size * (1-prob)^x
+    ## prob = size/(size + mu)
+    expr = expression(lgamma(x + size) - lgamma(size) - lfactorial(x) +
+                        size*(log(size) - log(size+mu)) +
+                        x*(log(mu) - log(size+mu))),
+    params = c("mu", "size"))
 )
 
 #' Allow users to add their own log likelihood functions
@@ -61,7 +68,7 @@ mkfun <- function(formula, start,
                   parameters = NULL,
                   data) {
   if (missing(data)) {
-    stop("missing data...") # if no data
+    stop("missing `data` argument...function does not use data from local environment") # if no data
   }
 
   response <- formula[[2]]
