@@ -108,6 +108,6 @@ fit3qz <- qzmle::mle(y~dnbinom(mu=exp(lymax)/(1+x/exp(lhalf)),
                      parameters=list(lymax~g), data=d2,
                      start=list(lymax=0,lhalf=0,logk=0))
 
-compare(coef(fit3bb), coef(fit3qz))
+compare(coef(fit3bb), coef(fit3qz), tolerance = 1e-6)
 all.equal(coef(fit3bb), coef(fit3qz), tol=1e-6)
 

@@ -3,8 +3,8 @@
 #' @param formula A formula in expression form of "y ~ model"
 #' @param start A list of initial values for the parameters
 #' @param links link function and the model parameter
-#' @param parameters A list of linear submodels and random effects
 #' @param data A list of parameter in the formula with values in vectors
+#' @param parameters A list of linear submodels and random effects
 #' @examples
 #' ## submodel examples
 #' set.seed(101)
@@ -35,8 +35,8 @@
 #' @export
 TMB_template <- function(formula, start,
                          links = NULL,
-                         parameters = NULL,
-                         data = NULL) {
+                         data = NULL,
+                         parameters = NULL) {
 
   ## add data vectors
   if (!is.null(data)) {
@@ -286,7 +286,7 @@ TMB_template <- function(formula, start,
 
   if (!is.null(Xlist)) names(Xlist) <- X_pname
   data_list <- c(data_list, Xlist, Zlist, named_list(re_rand))
-
+browser()
   return(list(data = data_list, start = start))
 }
 
@@ -311,7 +311,7 @@ TMB_template <- function(formula, start,
 #' @importFrom TMB compile dynlib MakeADFun
 #' @export
 TMB_mkfun <- function(formula, start, links = NULL, parameters = NULL, data) {
-  data_list <- TMB_template(formula, start, links, parameters, data)
+  data_list <- TMB_template(formula, start, links, data, parameters)
   TMB::compile("template.cpp")
   dyn.load(TMB::dynlib("template"))
   obj_fun <- MakeADFun(

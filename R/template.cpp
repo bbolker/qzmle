@@ -3,12 +3,14 @@ template<class Type>
 Type objective_function<Type>::operator() () { 
 DATA_VECTOR(y); 
 DATA_VECTOR(x); 
-PARAMETER(b0); 
-PARAMETER(b1); 
-PARAMETER(log_sigma); 
-Type sigma = exp(log_sigma); 
+DATA_MATRIX(X_lymax); 
+DATA_MATRIX(X_lhalf); 
+PARAMETER_VECTOR(lymax_param); 
+PARAMETER_VECTOR(lhalf_param); 
+vector <Type> lymax = X_lymax * lymax_param; 
+vector <Type> lhalf = NA * NA; 
 Type nll = 0.0;
-nll -= sum(dnorm(y, b0 + b1 * x,log_sigma, true));
+nll -= sum(dpois(y, vector<Type>(exp(lymax)/(1 + x/exp(lhalf))), true));
 
 return nll;}
 

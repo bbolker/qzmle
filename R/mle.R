@@ -201,10 +201,14 @@ summary.qzmle <- function(object, ...) {
 #' @export
 logLik.qzmle <- function(object, ...) {
   check_dots(...)
-  cat("'log Lik.'", -1 * round(object$minuslogl, 2))
-  cat(" (df=")
-  cat(length(object$coefficients))
-  cat(")")
+  ##cat("'log Lik.'", -1 * round(object$minuslogl, 2))
+  ##cat(" (df=")
+  ##cat(length(object$coefficients))
+  ##cat(")")
+  val <- -1* round(object$minuslogl, 2)
+  attr(val, "df") <- length(object$coefficients)
+  class(val) <- "logLik"
+  val
 }
 
 
@@ -212,7 +216,7 @@ logLik.qzmle <- function(object, ...) {
 #' @export
 vcov.qzmle <- function(object, ...) {
   check_dots(...)
-  print(object$tvcov)
+  object$tvcov
 }
 
 ## need to define stdEr generic or import/export from misctools
