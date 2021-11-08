@@ -156,17 +156,15 @@ TMB_template <- function(formula, start,
       start_pname[i] <- names(start)[i]
       params[i] <- sprintf("PARAMETER(%s); \n", names(start)[i])
     }
-
-    ## submodel data and parameterization
-    if (names(start)[i] %in% submodel_vars) {
-      X_pname <- paste0("X_", names(start)[i])
-      submodel_data_text[i] <- sprintf("DATA_MATRIX(%s); \n", X_pname)
-      submodel_eq[i] <- sprintf(
-        "vector <Type> %s = %s * %s; \n",
-        names(start)[i], X_pname[i], pname_param[i]
-      )
-    }
   }
+
+  ## submodel data and parameterization
+  X_pname <- paste0("X_", submodel_vars)
+  X_params <- paste0(submodel_vars, "_param")
+  submodel_data_text <- sprintf("DATA_MATRIX(%s); \n", X_pname)
+  submodel_eq <- sprintf(
+      "vector <Type> %s = %s * %s; \n",
+      submodel_vars, X_pname, X_params)
 
   # if(is.null(links)){
   #   links <- character(length(start))
@@ -286,7 +284,6 @@ TMB_template <- function(formula, start,
 
   if (!is.null(Xlist)) names(Xlist) <- X_pname
   data_list <- c(data_list, Xlist, Zlist, named_list(re_rand))
-browser()
   return(list(data = data_list, start = start))
 }
 

@@ -3,7 +3,7 @@
 #' @name mle
 #' @param form A formula in expression form of "y ~ model"
 #' @param start A list of initial values for parameters
-#' @param data A list of parameter in the formula with values in vectors
+#' @param data A data frame containing any variables used in the formula for the log-likelihood. (\code{mle} does not work with variables taken from the global environment; if necessary, wrap these variables in \code{data.frame} to pass them to the function.)
 #' @param fixed A list of parameter in the formula to keep fixed during optimization
 #' @param parameters A list of linear submodels and random effects
 #' @param control A list of parameter to pass to optimizer (See `mle_control`)
@@ -31,7 +31,7 @@
 #' fit4 <- mle(form, start = list(h = 4, log_a = 2),
 #'             parameters = list(log_a ~ poly(random)), data = rfp)
 #' @export
-## bbfit4 <- bbmle::mle2(form,parameters=list(log_a~poly(random)),start=list(log_a=c(2,0), h=4),data=rfp)
+## bbfit4 <- bbmle::mle2(form, parameters=list(log_a~poly(random)),start=list(log_a=c(2,0), h=4),data=rfp)
 
 #' @importFrom stats optim optimHess make.link
 #' @importFrom numDeriv jacobian hessian
@@ -83,10 +83,10 @@ mle <- function(form, start, data,
     stop(paste("unknown method", sQuote(method)))
   )
 
-  ## optimize using optim BGFS
+  ## optimize using optim BFGS
   argList <- list(par = unlist(ff$start), fn = ff$fn, gr = ff$gr)
   opt <- do.call(stats::optim, c(argList, control$optControl))
-
+  browser()
 
   ## ------------
   ## check for fixed parameters
@@ -131,12 +131,18 @@ mle <- function(form, start, data,
   }
   dimnames(tvcov) <- list(names(opt$par), names(opt$par))
 
+  mc <- match.call()
+  response <- eval(mc$form[[2]], data)
+  nobs <- if (is.matrix(response)) nrow(response) else length(response)
+
   result <- list(
-    call = match.call(),
+    call = mc,
     fixed = fixed,
     coefficients = opt$par,
     minuslogl = opt$value,
-    tvcov = tvcov
+    formula = mc$form,
+    tvcov = tvcov,
+    nobs = nobs
   )
   class(result) <- "qzmle"
   return(result)
@@ -197,6 +203,11 @@ summary.qzmle <- function(object, ...) {
   cat("\n-2 log L:", 2 * object$minuslogl, "\n")
 } ## maybe break it down to print.summary.qzmle?
 
+#' @export
+nobs.qzmle <- function(object) {
+  object$nobs
+}
+
 #########################
 #' @export
 logLik.qzmle <- function(object, ...) {
@@ -207,6 +218,7 @@ logLik.qzmle <- function(object, ...) {
   ##cat(")")
   val <- -1* round(object$minuslogl, 2)
   attr(val, "df") <- length(object$coefficients)
+  attr(val, "nobs") <- nobs(object)
   class(val) <- "logLik"
   val
 }

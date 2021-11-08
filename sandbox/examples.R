@@ -1,6 +1,7 @@
 ## examples to make work with qzmle
 library(qzmle)
 library(bbmle)
+library(testthat)
 
 ## examples from ?bbmle::mle2
 
@@ -14,7 +15,8 @@ LL <- function(ymax=15, xhalf=6)
 ## uses default parameters of LL
 ## data from global environment
 fit <- mle2(LL)
-fitqz <- qzmle::mle(LL) ## missing data ...
+expect_error(qzmle::mle(LL), "function does not use data")
+
 ## TASK 1. (a) Document the fact that qzmle::mle() doesn't work
 ## with variables taken from the global environment
 ## (b) Add an issue to possibly implement this ...
@@ -33,8 +35,8 @@ fit0qz <- qzmle::mle(y~dpois(lambda=ymean),
                      data=d)
 ## Cant put minuslogl inside bc minuslogl = opt$value
 ##optimHess(coef(fit0qz), fn = fit0qz$minuslogl)
-all.equal(coef(fit0), coef(fit0qz))
-all.equal(vcov(fit0), vcov(fit0qz), tol=1e-5)
+expect_equal(coef(fit0), coef(fit0qz))
+expect_equal(vcov(fit0), vcov(fit0qz), tol=1e-5)
 ## TASK: return the negative log-likelihood _function_ as one component of a fitted mle object.
 
 
@@ -63,7 +65,9 @@ logLik(fit0)
 vcov(fit0)
 
 summary(fit0qz)
-logLik(fit0qz)
+
+expect_equal(logLik(fit0qz), logLik(fit0), tolerance = 1e-4)
+
 vcov(fit0qz)
 ## Able to assign to variable
 temp <- vcov(fit0qz)
@@ -75,21 +79,21 @@ fit1qz <- qzmle::mle(y~dpois(lambda=exp(lymax)/(1+x/exp(lhalf))),
       data=d,
       parameters=list(lymax~1,lhalf~1))
 
-## FIXME
 fit1qz_tmb <- qzmle::mle(y~dpois(lambda=exp(lymax)/(1+x/exp(lhalf))),
       start=list(lymax=0,lhalf=0),
       data=d,
-      parameters=list(lymax~1,lhalf~1),
+      parameters=list(lymax~1, lhalf~1),
       method="TMB")
 
 fit1bb <- mle2(y~dpois(lambda=exp(lymax)/(1+x/exp(lhalf))),
       start=list(lymax=0,lhalf=0),
       data=d,
       parameters=list(lymax~1,lhalf~1))
-all.equal(coef(fit1bb), coef(fit1qz), tol=1e-8)
 
-library(waldo)
-compare(coef(fit1bb), coef(fit1qz))
+## TMB parameters are named "_param"
+all.equal(unname(coef(fit1bb)),
+          unname(coef(fit1qz_tmb)),
+          tolerance = 1e-6)
 
 set.seed(1001)
 lymax <- c(0,2)
@@ -111,3 +115,19 @@ fit3qz <- qzmle::mle(y~dnbinom(mu=exp(lymax)/(1+x/exp(lhalf)),
 compare(coef(fit3bb), coef(fit3qz), tolerance = 1e-6)
 all.equal(coef(fit3bb), coef(fit3qz), tol=1e-6)
 
+## TASK 1: copy these examples over to test files,
+## with expect_equal() instead of all.equal()
+## (expect_error() where used above)
+
+## TASK 2: try TMB with random effects!
+
+## TASK 3: when parameters= is specified, parameter names should be
+## coefficient names should match between mle and TMB versions
+## parameter *vector* is still called lymax_params (inside TMB),
+## but the names associated with the coefficients should be
+## lymax.(Intercept) etc..
+
+## for each model matrix, paste the parameter name together with the column names
+##  of the model matrix
+##  lymax . (Intercept)
+## paste(param , colnames(X1), sep = ".")
