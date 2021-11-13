@@ -86,7 +86,7 @@ mle <- function(form, start, data,
   ## optimize using optim BFGS
   argList <- list(par = unlist(ff$start), fn = ff$fn, gr = ff$gr)
   opt <- do.call(stats::optim, c(argList, control$optControl))
-  browser()
+
 
   ## ------------
   ## check for fixed parameters

@@ -84,8 +84,54 @@ test_that("Negative Binomial works", {
   }
   )
 
+d <- data.frame(x = 0:10,
+               y = c(26, 17, 13, 12, 20, 5, 9, 8, 5, 4, 8))
+attach(d)
+
+LL <- function(x, y, ymax=15, xhalf=6, log=FALSE) {
+  return(-sum(stats::dpois(y, lambda=ymax/(1+x/xhalf), log=TRUE)))
+}
+test_that("Cannot use data in local environment", {
+  expect_error(qzmle::mle(LL), "missing `data` argument")
+})
+
+test_that("Poisson works", {
+  fit0qz <- qzmle::mle(y~dpois(lambda=ymean),
+                     start=list(ymean=mean(d$y)),
+                     data=d)
+  if (requireNamespace("bbmle")) {
+    fit0bb <- mle2(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
+  }
+  expect_equal(coef(fit0qz), coef(fit0bb), tolerance = 1e-5)
+  expect_equal(vcov(fit0qz), vcov(fit0bb), tolerance = 1e-5)
+  expect_equal(logLik(fit0qz), logLik(fit0bb), tolerance = 1e-4)
+})
 
 
+if (requireNamespace("bbmle")) {
+  fit1bb <- mle2(y~dpois(lambda=exp(lymax)/(1+x/exp(lhalf))),
+      start=list(lymax=0,lhalf=0),
+      data=d,
+      parameters=list(lymax~1,lhalf~1))
+}
 
+test_that("Poisson with more than on parameter works", {
+  fit1qz <- qzmle::mle(y~dpois(lambda=exp(lymax)/(1+x/exp(lhalf))),
+      start=list(lymax=0,lhalf=0),
+      data=d,
+      parameters=list(lymax~1,lhalf~1))
 
+  expect_equal(unname(coef(fit1bb)), unname(coef(fit1qz)), tolerance = 1e-6)
+}
+)
 
+test_that("(TMB) Poisson with more than on parameter works", {
+  fit1qz_tmb <- qzmle::mle(y~dpois(lambda=exp(lymax)/(1+x/exp(lhalf))),
+      start=list(lymax=0,lhalf=0),
+      data=d,
+      parameters=list(lymax~1,lhalf~1),
+      method = "TMB")
+
+  expect_equal(unname(coef(fit1bb)), unname(coef(fit1qz_tmb)), tolerance = 1e-6)
+}
+)

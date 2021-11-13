@@ -10,8 +10,13 @@ d <- data.frame(x = 0:10,
 attach(d) ## !!!!
 ## in general it is best practice to use the `data' argument,
 ##  but variables can also be drawn from the global environment
-LL <- function(ymax=15, xhalf=6)
-  -sum(stats::dpois(y, lambda=ymax/(1+x/xhalf), log=TRUE))
+## LL <- function(ymax=15, xhalf=6)
+## -sum(stats::dpois(y, lambda=ymax/(1+x/xhalf), log=TRUE))
+LL <- function(x, y, ymax=15, xhalf=6, log=FALSE) {
+  return(-sum(stats::dpois(y, lambda=ymax/(1+x/xhalf), log=TRUE)))
+}
+add_logl("LL", expression(-sum(stats::dpois(y, lambda=ymax/(1+x/xhalf), log=TRUE))),
+         c("ymax", "xhalf"))
 ## uses default parameters of LL
 ## data from global environment
 fit <- mle2(LL)
