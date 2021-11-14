@@ -42,10 +42,10 @@ if (requireNamespace("emdbook")) {
     ## parameters = list(logit_a ~ poly(random)), data = rfp
     ## )
     ## plogis() not in derivative table ...
-    qzfit2 <- qzmle::mle(form_logit3,
-                         start = list(log_h = log(4), logit_a = 2),
-                         parameters = list(logit_a ~ poly(random)), data = rfp
-                         )
+    # qzfit2 <- qzmle::mle(form_logit3,
+    #                      start = list(log_h = log(4), logit_a = 2),
+    #                      parameters = list(logit_a ~ poly(random)), data = rfp
+    #                      )
     ## wants h -> 0 ... why???
 
     ## FIXME:: warnings about a>1; use logit link ???
@@ -114,19 +114,17 @@ if (requireNamespace("bbmle")) {
       start=list(lymax=0,lhalf=0),
       data=d,
       parameters=list(lymax~1,lhalf~1))
-}
 
-test_that("Poisson with more than on parameter works", {
+  test_that("Poisson with more than on parameter works", {
   fit1qz <- qzmle::mle(y~dpois(lambda=exp(lymax)/(1+x/exp(lhalf))),
       start=list(lymax=0,lhalf=0),
       data=d,
       parameters=list(lymax~1,lhalf~1))
 
   expect_equal(unname(bbmle::coef(fit1bb)), unname(coef(fit1qz)), tolerance = 1e-6)
-}
-)
+  })
 
-test_that("(TMB) Poisson with more than on parameter works", {
+  test_that("(TMB) Poisson with more than on parameter works", {
   fit1qz_tmb <- qzmle::mle(y~dpois(lambda=exp(lymax)/(1+x/exp(lhalf))),
       start=list(lymax=0,lhalf=0),
       data=d,
@@ -134,5 +132,5 @@ test_that("(TMB) Poisson with more than on parameter works", {
       method = "TMB")
   expect_equal(unname(bbmle::coef(fit1bb)), unname(coef(fit1qz_tmb)), tolerance = 1e-6)
   unlink("template.*")
+  })
 }
-)

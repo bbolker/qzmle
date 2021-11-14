@@ -203,11 +203,6 @@ summary.qzmle <- function(object, ...) {
   cat("\n-2 log L:", 2 * object$minuslogl, "\n")
 } ## maybe break it down to print.summary.qzmle?
 
-#' @export
-nobs.qzmle <- function(object, ...) {
-  check_dots(...)
-  object$nobs
-}
 
 #########################
 #' @export
@@ -219,7 +214,7 @@ logLik.qzmle <- function(object, ...) {
   ##cat(")")
   val <- -1* round(object$minuslogl, 2)
   attr(val, "df") <- length(object$coefficients)
-  attr(val, "nobs") <- nobs(object)
+  attr(val, "nobs") <- object$nobs
   class(val) <- "logLik"
   val
 }
