@@ -12,6 +12,7 @@ if (requireNamespace("emdbook")) {
   form_logit3 <- surv ~ dbinom(size = density,
                                prob = 1/(1 + exp(-logit_a)) / (1 + 1/(1+exp(-logit_a)) * exp(log_h) * density))
 
+
   ## FIXME: does plogis() work too (or do we need to add it to deriv table?)
 
   ## test if getting same result as bbmle
@@ -76,7 +77,7 @@ test_that("Negative Binomial works", {
                        start=list(lymax=0,lhalf=0,logk=0))
 
   if (requireNamespace("bbmle")) {
-    fit3bb <- mle2(y~dnbinom(mu=exp(lymax)/(1+x/exp(lhalf)),size=exp(logk)),
+    fit3bb <- bbmle::mle2(y~dnbinom(mu=exp(lymax)/(1+x/exp(lhalf)),size=exp(logk)),
                    parameters=list(lymax~g),data=d2,
                    start=list(lymax=0,lhalf=0,logk=0))
   }
@@ -100,16 +101,16 @@ test_that("Poisson works", {
                      start=list(ymean=mean(d$y)),
                      data=d)
   if (requireNamespace("bbmle")) {
-    fit0bb <- mle2(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
+    fit0bb <- bbmle::mle2(y~dpois(lambda=ymean),start=list(ymean=mean(d$y)),data=d)
   }
-  expect_equal(coef(fit0qz), coef(fit0bb), tolerance = 1e-5)
-  expect_equal(vcov(fit0qz), vcov(fit0bb), tolerance = 1e-5)
-  expect_equal(logLik(fit0qz), logLik(fit0bb), tolerance = 1e-4)
+  expect_equal(coef(fit0qz), bbmle::coef(fit0bb), tolerance = 1e-5)
+  expect_equal(vcov(fit0qz), bbmle::vcov(fit0bb), tolerance = 1e-5)
+  expect_equal(logLik(fit0qz), bbmle::logLik(fit0bb), tolerance = 1e-4)
 })
 
 
 if (requireNamespace("bbmle")) {
-  fit1bb <- mle2(y~dpois(lambda=exp(lymax)/(1+x/exp(lhalf))),
+  fit1bb <- bbmle::mle2(y~dpois(lambda=exp(lymax)/(1+x/exp(lhalf))),
       start=list(lymax=0,lhalf=0),
       data=d,
       parameters=list(lymax~1,lhalf~1))
@@ -121,7 +122,7 @@ test_that("Poisson with more than on parameter works", {
       data=d,
       parameters=list(lymax~1,lhalf~1))
 
-  expect_equal(unname(coef(fit1bb)), unname(coef(fit1qz)), tolerance = 1e-6)
+  expect_equal(unname(bbmle::coef(fit1bb)), unname(coef(fit1qz)), tolerance = 1e-6)
 }
 )
 
@@ -132,6 +133,6 @@ test_that("(TMB) Poisson with more than on parameter works", {
       parameters=list(lymax~1,lhalf~1),
       method = "TMB")
 
-  expect_equal(unname(coef(fit1bb)), unname(coef(fit1qz_tmb)), tolerance = 1e-6)
+  expect_equal(unname(bbmle::coef(fit1bb)), unname(coef(fit1qz_tmb)), tolerance = 1e-6)
 }
 )

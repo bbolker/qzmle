@@ -21,7 +21,7 @@ mle(
 
 \item{start}{A list of initial values for parameters}
 
-\item{data}{A list of parameter in the formula with values in vectors}
+\item{data}{A data frame containing any variables used in the formula for the log-likelihood. (\code{mle} does not work with variables taken from the global environment; if necessary, wrap these variables in \code{data.frame} to pass them to the function.)}
 
 \item{fixed}{A list of parameter in the formula to keep fixed during optimization}
 

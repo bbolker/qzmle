@@ -4,7 +4,7 @@
 \alias{TMB_template}
 \title{Make model template to be compiled and return data list}
 \usage{
-TMB_template(formula, start, links = NULL, parameters = NULL, data = NULL)
+TMB_template(formula, start, links = NULL, data = NULL, parameters = NULL)
 }
 \arguments{
 \item{formula}{A formula in expression form of "y ~ model"}
@@ -13,9 +13,9 @@ TMB_template(formula, start, links = NULL, parameters = NULL, data = NULL)
 
 \item{links}{link function and the model parameter}
 
-\item{parameters}{A list of linear submodels and random effects}
-
 \item{data}{A list of parameter in the formula with values in vectors}
+
+\item{parameters}{A list of linear submodels and random effects}
 }
 \description{
 Make model template to be compiled and return data list

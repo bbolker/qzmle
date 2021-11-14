@@ -132,7 +132,7 @@ mle <- function(form, start, data,
   dimnames(tvcov) <- list(names(opt$par), names(opt$par))
 
   mc <- match.call()
-  response <- eval(mc$form[[2]], data)
+  response <- eval(eval(mc$form)[[2]], data)
   nobs <- if (is.matrix(response)) nrow(response) else length(response)
 
   result <- list(
@@ -204,7 +204,8 @@ summary.qzmle <- function(object, ...) {
 } ## maybe break it down to print.summary.qzmle?
 
 #' @export
-nobs.qzmle <- function(object) {
+nobs.qzmle <- function(object, ...) {
+  check_dots(...)
   object$nobs
 }
 

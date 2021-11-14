@@ -224,7 +224,7 @@ TMB_template <- function(formula, start,
   ## make sure to vectorize parameter when needed
   if (!is.null(submodel_vars)) {
     for (i in seq_along(arglist)) {
-      if (sum(sapply(submodel_vars, grepl, arglist[i])) > 1) {
+      if (sum(sapply(submodel_vars, grepl, arglist[i])) >= 1) {
         arglist[[i]] <- sprintf("vector<Type>(%s)", deparse(arglist[[i]]))
       }
     }
@@ -278,7 +278,6 @@ TMB_template <- function(formula, start,
 
   ## if RE models exist, then ... ?
 
-  browser()
   re_sd <- list(rep(0, 20))
   start <- c(start, res_sdname = re_sd, re_rand = 0)
   names(start) <- c(names(start)[1:int_n], re_rand, re_sdname)
