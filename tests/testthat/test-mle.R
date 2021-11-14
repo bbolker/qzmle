@@ -132,7 +132,7 @@ test_that("(TMB) Poisson with more than on parameter works", {
       data=d,
       parameters=list(lymax~1,lhalf~1),
       method = "TMB")
-
   expect_equal(unname(bbmle::coef(fit1bb)), unname(coef(fit1qz_tmb)), tolerance = 1e-6)
+  unlink("template.*")
 }
 )
