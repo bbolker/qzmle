@@ -64,17 +64,17 @@ mle <- function(form, start, data,
 
 
   ## calling TMB integration if chose to
+  if (missing(method)) method_missing <- TRUE
   method <- match.arg(method)
 
   ## check for random effect and send to TMB
   if (!is.null(parameters)) {
     reTerms <- unlist(sapply(parameters, lme4::findbars))
     if (!is.null(reTerms)) {
-      if (method != "TMB") warning("Computing random effects in TMB")
+      if (!method_missing && method == "R") warning("method='R' specified, but can only fit random effects with TMB: switching")
       method <- "TMB"
     }
   }
-
 
   ## make obj fun and gradients
   ff <- switch(method,
@@ -85,6 +85,12 @@ mle <- function(form, start, data,
 
   ## optimize using optim BFGS
   argList <- list(par = unlist(ff$start), fn = ff$fn, gr = ff$gr)
+  ## FIXME:: shouldn't be including RE parameters in the parameter list
+  ##  to be passed to optim
+  ## this is a hack, we should be able to leave these out upstream
+  ## in a sensible way (this hack is also dangerous because someone
+  ## might name a parameter with _rand in it)
+  argList$par <- argList$par[!grepl("_rand[0-9]+", names(argList$par))]
   opt <- do.call(stats::optim, c(argList, control$optControl))
 
 
