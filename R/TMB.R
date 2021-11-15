@@ -263,13 +263,16 @@ TMB_template <- function(formula, start,
   ## return(model)
   write(model, file = "template.cpp")
 
+
   ## return list of data
   data_list <- list()
   for (i in data_vars) {
     data_list[[i]] <- data[[i]]
   }
+
+
   names(start) <- start_pname
-  start <- sapply(start, unname)
+  # start <- sapply(start, unname)
   int_n <- length(start)
 
   ## FIXME: this was clearly messed with to make something work.

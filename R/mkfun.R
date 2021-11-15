@@ -124,6 +124,7 @@ mkfun <- function(formula, start,
 
   arglist1 <- c(list(x = response), arglist, list(log = TRUE))
 
+  browser()
   fn <- function(pars) {
     pars <- relist(pars, start)
 

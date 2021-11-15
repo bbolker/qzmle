@@ -24,7 +24,7 @@
 #'   start = list(b0 = 1, b1 = 2, log_sigma = sd(y)),
 #'   data = list(x = x, y = y), links = c(b0 = "identity", b1 = "identity", sigma = "log")
 #' )
-#' ## linear submodelsn
+#' ## linear submodels
 #' set.seed(101)
 #' rfp <- transform(emdbook::ReedfrogPred, nsize = as.numeric(size), random = rnorm(48))
 #' form <- surv ~ dbinom(size = density, prob = exp(log_a) / (1 + exp(log_a) * h * density))
