@@ -68,7 +68,7 @@ TMB_template <- function(formula, start,
   Xlist <- Zlist <- NULL
   submodel_vars <- prec <- pvec <- NULL
   re_data <- re_param <- re_eq <- re_param_vec <-
-    re_sdname <- re_rand <- nll_pen <- NULL
+re_sdname <- re_rand <- nll_pen <- NULL
 
   ## submodels
   if (length(parameters)>0) {
@@ -129,7 +129,6 @@ TMB_template <- function(formula, start,
   }
   } ## if parameters (submodels) specified
   ## FIXME: re_rand should be vector
-
   ## if missing start arguments, use the named argument as the first element,
   ## all other elements of the sub-model parameter vector are 0
   for (i in submodel_vars) {
@@ -281,7 +280,7 @@ TMB_template <- function(formula, start,
 
   ## if RE models exist, then ... ?
 
-  re_sd <- list(rep(0, 20))
+  re_sd <- re_rand_val
   start <- c(start, res_sdname = re_sd, re_rand = 0)
   names(start) <- c(names(start)[1:int_n], re_rand, re_sdname)
 
@@ -320,8 +319,8 @@ TMB_mkfun <- function(formula, start, links = NULL, parameters = NULL, data) {
     parameters = data_list$start,
     silent = TRUE,
     DLL = "template",
-    random = data_list$data$re_rand
-  )
+    random = data_list$data$re_rand)
+
   obj_fun <- c(obj_fun,
                start = list(data_list$start[!is.na(names(data_list$start))]))
   return(obj_fun)
