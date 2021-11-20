@@ -45,5 +45,4 @@ parameters <- list(logit_a ~ 1 + (1 | block))
 links <- list(a = "logit", h = "log")
 start <- list(logit_a = c(0), log_h = 0)
 TMB_template(form, start = start, links = links, parameters = parameters, data = rfpsim)
-mle(form, start = start, links = links, parameters = parameters, data = rfpsim)
 }

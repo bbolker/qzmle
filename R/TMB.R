@@ -280,9 +280,13 @@ re_sdname <- re_rand <- nll_pen <- NULL
 
   ## if RE models exist, then ... ?
 
-  re_sd <- re_rand_val
-  start <- c(start, res_sdname = re_sd, re_rand = 0)
-  names(start) <- c(names(start)[1:int_n], re_rand, re_sdname)
+  if (exists("re_rand_val")) {
+    re_sd <- re_rand_val
+  }
+
+  re_sd <- 0
+  start <- c(start, re_sdname = re_sd, re_rand = 0)
+  names(start) <- c(names(start)[1:int_n], re_sdname, re_rand)
 
 
   if (!is.null(Xlist)) names(Xlist) <- X_pname
