@@ -64,7 +64,7 @@ mle <- function(form, start, data,
 
 
   ## calling TMB integration if chose to
-  if (missing(method)) method_missing <- TRUE
+  method_missing <- missing(method)
   method <- match.arg(method)
 
   ## check for random effect and send to TMB

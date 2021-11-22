@@ -85,7 +85,8 @@ re_sdname <- re_rand <- nll_pen <- NULL
     pvec <- start[submodel_vars]
 
   ## Setting up random terms
-  if (!all(sapply(random_terms, is.null))) {
+  has_random <- !all(sapply(random_terms, is.null))
+  if (has_random) {
     names(random_terms) <- submodel_vars
     random_terms <- unlist(random_terms[which(!is.null(random_terms))])
 
@@ -280,21 +281,24 @@ re_sdname <- re_rand <- nll_pen <- NULL
 
   ## if RE models exist, then ... ?
 
-  if (exists("re_rand_val")) {
-    re_sd <- re_rand_val
+  ## set up dummy values for RE if there's no RE in the model ...
+
+  ## FIXME: what if we have >1 random variable?
+  if (has_random) {
+    start <- c(start, re_sdname = re_sd, re_rand = re_rand_val)
+    names(start) <- c(names(start)[1:int_n], re_sdname, re_rand)
+  } else {
+    re_rand <- NULL
   }
 
-  re_sd <- 0
-  start <- c(start, re_sdname = re_sd, re_rand = 0)
-  names(start) <- c(names(start)[1:int_n], re_sdname, re_rand)
-
-
   if (!is.null(Xlist)) names(Xlist) <- X_pname
-  data_list <- c(data_list, Xlist, Zlist, named_list(re_rand))
-  return(list(data = data_list, start = start))
+  data_list <- c(data_list, Xlist, Zlist) ## , named_list(re_rand))
+  return(list(data = data_list,
+              parameters = start,  ## includes RE vectors
+              start = start[!names(start) %in% re_rand],  ## omits RE vectors
+              random = re_rand)
+         )
 }
-
-
 
 #' Compiles template and create nll and gradient
 #' @name TMB_mkfun
@@ -319,14 +323,15 @@ TMB_mkfun <- function(formula, start, links = NULL, parameters = NULL, data) {
   TMB::compile("template.cpp")
   dyn.load(TMB::dynlib("template"))
   obj_fun <- MakeADFun(
-    data = data_list$data[names(data_list$data) != "re_rand"],
-    parameters = data_list$start,
+    data = data_list$data, ## [names(data_list$data) != "re_rand"],
+    parameters = data_list$parameters,
     silent = TRUE,
     DLL = "template",
-    random = data_list$data$re_rand)
+    random = data_list$random)
 
   obj_fun <- c(obj_fun,
-               start = list(data_list$start[!is.na(names(data_list$start))]))
+               start = list(data_list$start))
+
   return(obj_fun)
 }
 
